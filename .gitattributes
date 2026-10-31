@@ -1,0 +1,3 @@
+# Preserve exact upstream and patch bytes, including original license CRLF.
+# This keeps the SHA-256 manifest valid on Windows with core.autocrlf enabled.
+* -text
