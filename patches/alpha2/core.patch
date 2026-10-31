@@ -1,0 +1,1783 @@
+diff --git a/docs/config-catalog.md b/docs/config-catalog.md
+index 9b409c6b55..f9f1138f83 100644
+--- a/docs/config-catalog.md
++++ b/docs/config-catalog.md
+@@ -3932,7 +3932,7 @@ export interface Config {
+ ## `@deepseek-ai/dsh-tool-bash`
+ 
+ - `inject`: `tools` · `shell` · `systemPrompt` · `shellEnv` · `workingDirectory`
+-- `source`: [`packages/shell/tool-bash/src/index.ts:37`](../packages/shell/tool-bash/src/index.ts)
++- `source`: [`packages/shell/tool-bash/src/index.ts:41`](../packages/shell/tool-bash/src/index.ts)
+ 
+ ```ts config-catalog
+ /** Configuration for the bash tool. */
+@@ -3952,6 +3952,8 @@ export interface Config {
+    * controller) also runs under the deadline kill.
+    */
+   promoteOnTimeout?: boolean
++  /** Maximum wait for provider range cleanup after cancellation (default 10000 ms). */
++  rangeCleanupTimeoutMs?: number
+ }
+ ```
+ <!-- END GENERATED config-catalog:@deepseek-ai/dsh-tool-bash -->
+diff --git a/docs/config-catalog.zh.md b/docs/config-catalog.zh.md
+index 25094e00e3..31f8ef4c5e 100644
+--- a/docs/config-catalog.zh.md
++++ b/docs/config-catalog.zh.md
+@@ -3934,7 +3934,7 @@ export interface Config {
+ ## `@deepseek-ai/dsh-tool-bash`
+ 
+ - `inject`: `tools` · `shell` · `systemPrompt` · `shellEnv` · `workingDirectory`
+-- `source`: [`packages/shell/tool-bash/src/index.ts:37`](../packages/shell/tool-bash/src/index.ts)
++- `source`: [`packages/shell/tool-bash/src/index.ts:41`](../packages/shell/tool-bash/src/index.ts)
+ 
+ ```ts config-catalog
+ /** Configuration for the bash tool. */
+@@ -3954,6 +3954,8 @@ export interface Config {
+    * controller) also runs under the deadline kill.
+    */
+   promoteOnTimeout?: boolean
++  /** Maximum wait for provider range cleanup after cancellation (default 10000 ms). */
++  rangeCleanupTimeoutMs?: number
+ }
+ ```
+ <!-- END GENERATED config-catalog:@deepseek-ai/dsh-tool-bash -->
+diff --git a/docs/subsystems/shell.i18n.yaml b/docs/subsystems/shell.i18n.yaml
+index c022715938..a129869103 100644
+--- a/docs/subsystems/shell.i18n.yaml
++++ b/docs/subsystems/shell.i18n.yaml
+@@ -18,8 +18,8 @@
+   en: 7f84b75c4128768c
+   zh: cf389bfa6c8d24f3
+ /shell-executor/background-processes-shellprocess:
+-  en: e5530a4d2b8f3aa3
+-  zh: 72e4fd736c1a6d9d
++  en: b4ca64d378932abe
++  zh: 92b9d666cbb854ff
+ /shell-executor/the-service:
+   en: b850ffb5f5b75ac6
+   zh: 796e57ae77e0e41f
+diff --git a/docs/subsystems/shell.md b/docs/subsystems/shell.md
+index 924e302b24..961ff2b776 100644
+--- a/docs/subsystems/shell.md
++++ b/docs/subsystems/shell.md
+@@ -180,6 +180,8 @@ The `SANDBOX_UNAVAILABLE` error code (owned by the [sandbox seam](sandbox.md)) i
+  * awaits {@link done}; an executor-only reload leaves them running.
+  */
+ interface ShellProcess {
++  /** Absent when this execution has no provider-managed range handle. */
++  readonly managedRange?: ShellManagedRange
+   /** Process lifecycle state (settled exactly once). */
+   status: ShellProcessStatus
+   /** Exit code once finished (null = killed by signal / still running). */
+@@ -214,6 +216,8 @@ interface ShellProcess {
+ }
+ ```
+ 
++Providers advertise `supportsManagedRange` when spawned executions expose a `managedRange` handle. Its `terminate()` remains available after direct-command exit, and `waitForExit(signal)` returns true only when the provider-managed range is empty, false on cancellation, or rejects on observation failure. A missing handle cannot certify drainage. `done`, `result()` and `kill()` retain their direct-command semantics; range drainage is a separate observation. The provider determines containment coverage; this interface does not strengthen a weaker process-tree backend.
++
+ `readOutput()` returns the incremental delta and spill recovery facts:
+ 
+ ```ts type-equiv
+diff --git a/docs/subsystems/shell.zh.md b/docs/subsystems/shell.zh.md
+index 7c6d41fc8c..9e446f4ce5 100644
+--- a/docs/subsystems/shell.zh.md
++++ b/docs/subsystems/shell.zh.md
+@@ -180,6 +180,8 @@ interface ShellSandboxInfo {
+  * awaits {@link done}; an executor-only reload leaves them running.
+  */
+ interface ShellProcess {
++  /** Absent when this execution has no provider-managed range handle. */
++  readonly managedRange?: ShellManagedRange
+   /** Process lifecycle state (settled exactly once). */
+   status: ShellProcessStatus
+   /** Exit code once finished (null = killed by signal / still running). */
+@@ -214,6 +216,8 @@ interface ShellProcess {
+ }
+ ```
+ 
++提供方通过 `supportsManagedRange` 声明已启动的执行会暴露 `managedRange` 句柄。其 `terminate()` 在直接命令退出后仍可调用；`waitForExit(signal)` 仅在提供方管理的进程范围为空时返回 true，取消时返回 false，观察失败时拒绝。句柄缺失不能证明排空。`done`、`result()` 和 `kill()` 保持直接命令语义；范围排空是独立的观察结果。隔离覆盖范围由提供方决定，此接口不会加强较弱的进程树后端。
++
+ `readOutput()` 返回增量内容与 spill 恢复信息：
+ 
+ ```ts type-equiv
+diff --git a/docs/tool-catalog.md b/docs/tool-catalog.md
+index f3961a622e..5326c032ec 100644
+--- a/docs/tool-catalog.md
++++ b/docs/tool-catalog.md
+@@ -718,6 +718,14 @@ Execute a bash command (`bash -c`) and return its stdout/stderr. Each call runs
+       "type": "string",
+       "description": "Working directory for this command. Defaults to the session workspace; a relative path is resolved against it."
+     },
++    "completion_scope": {
++      "type": "string",
++      "description": "Default command waits for the direct command only. managed-range requires a capable executor and job registry, and waits for the provider-managed range to become empty; timeout may return a job handle.",
++      "enum": [
++        "command",
++        "managed-range"
++      ]
++    },
+     "run_in_background": {
+       "type": "boolean",
+       "description": "Run in the background and return a job id immediately (collect with job_output, stop with job_kill). No timeout applies."
+diff --git a/docs/tool-catalog.zh.md b/docs/tool-catalog.zh.md
+index eeb607a067..8f8a4b59f7 100644
+--- a/docs/tool-catalog.zh.md
++++ b/docs/tool-catalog.zh.md
+@@ -722,6 +722,14 @@ PTC 执行器只向模型公开 run_code，并在运行时语言生成的 SDK 
+       "type": "string",
+       "description": "Working directory for this command. Defaults to the session workspace; a relative path is resolved against it."
+     },
++    "completion_scope": {
++      "type": "string",
++      "description": "Default command waits for the direct command only. managed-range requires a capable executor and job registry, and waits for the provider-managed range to become empty; timeout may return a job handle.",
++      "enum": [
++        "command",
++        "managed-range"
++      ]
++    },
+     "run_in_background": {
+       "type": "boolean",
+       "description": "Run in the background and return a job id immediately (collect with job_output, stop with job_kill). No timeout applies."
+diff --git a/packages/core/agent-loop/tests/tool-calls.spec.ts b/packages/core/agent-loop/tests/tool-calls.spec.ts
+index 096f14c5f7..daeda44099 100644
+--- a/packages/core/agent-loop/tests/tool-calls.spec.ts
++++ b/packages/core/agent-loop/tests/tool-calls.spec.ts
+@@ -118,6 +118,104 @@ async function until(predicate: () => boolean): Promise<void> {
+   if (!predicate()) throw new Error('until: condition never held')
+ }
+ 
++it('preserves successful sibling output when later prepare fails', async () => {
++  const adapter = new MockAdapter([multiCall([
++    { id: 'c1', name: 'probe', args: { id: '1' } },
++    { id: 'c2', name: 'probe', args: { id: '2' } },
++    { id: 'c3', name: 'probe', args: { id: '3' } },
++  ]), textResponse('after wake')])
++  const ctx = await harness(adapter, 3)
++  const gate = Promise.withResolvers<undefined>()
++  const started: string[] = []
++  const finished: string[] = []
++  ctx.tools.register(defineContentToolFixture({
++    name: 'probe', description: 'deterministic regression probe',
++    parameters: { id: { type: 'string', required: true } },
++    isConcurrencySafe: () => true,
++    async execute(args) {
++      started.push(args.id)
++      if (args.id === '2') await gate.promise
++      finished.push(args.id)
++      return [{ type: 'text', text: `done-${args.id}` }]
++    },
++  }))
++  onTestFinished(async () => { gate.resolve(undefined); await ctx.fiber.dispose() })
++  ctx.on('tools/post-execute', async (exec, _result, next): Promise<PostToolDecision> => ({
++    ...await next(),
++    additionalContexts: [createUserMessage({
++      content: [{ type: 'text', text: `ctx-${exec.callId}` }], source: { kind: 'p' },
++    })],
++  }))
++  const scheduler = ctx.toolPipeline
++  const prepare = scheduler.prepare.bind(scheduler)
++  scheduler.prepare = (exec) => {
++    if (exec.callId === ToolCallId('c3')) {
++      expect(started).toContain('2')
++      gate.resolve(undefined)
++      throw new Error('probe third-call prepare failure')
++    }
++    return prepare(exec)
++  }
++  const agent = await ctx.agentLoop.create(SessionId('successful-sibling-probe'), { provider: 'mock', model: 'mock' })
++  const idle = waitForIdle(ctx, agent)
++  agent.followup(createUserMessage({ content: [{ type: 'text', text: 'go' }], source: { kind: 'user' } }))
++  await idle
++  const result = events(agent).find(event => event.type === 'tool/result' && event.data.message.toolCallId === ToolCallId('c2'))
++  expect(finished).toContain('2')
++  expect(result).toMatchObject({
++    data: { message: { toolCallId: ToolCallId('c2'), content: [{ type: 'text', text: 'done-2' }] } },
++  })
++  expect(result).not.toMatchObject({ data: { error: { code: 'TOOL_OUTCOME_UNKNOWN' } } })
++  expect(events(agent).at(-1)).toMatchObject({
++    data: { reason: { kind: 'error', error: { message: 'probe third-call prepare failure' } } },
++  })
++  const resumed = waitForIdle(ctx, agent)
++  agent.followup(createUserMessage({ content: [{ type: 'text', text: 'continue' }], source: { kind: 'user' } }))
++  await resumed
++  const retainedContexts = adapter.requests[1]?.messages.flatMap(message =>
++    message.role === 'user' ? message.content.flatMap(block =>
++      block.type === 'text' && block.text.startsWith('ctx-') ? [block.text] : []) : [])
++  expect(retainedContexts).toEqual(['ctx-c1', 'ctx-c2'])
++})
++
++it('does not retry a finalization that already threw before drain', async () => {
++  const adapter = new MockAdapter([multiCall([
++    { id: 'c1', name: 'p', args: { id: '1' } },
++    { id: 'c2', name: 'p', args: { id: '2' } },
++  ])])
++  const ctx = await harness(adapter, 2)
++  onTestFinished(() => ctx.fiber.dispose())
++  let finalizeCallCount = 0
++  ctx.tools.register(defineContentToolFixture({
++    name: 'p', description: 'parallel',
++    parameters: { id: { type: 'string', required: true } },
++    isConcurrencySafe: () => true,
++    async execute(args) { return [{ type: 'text', text: `done-${args.id}` }] },
++  }))
++  const scheduler = ctx.toolPipeline
++  const finalize = scheduler.complete.bind(scheduler)
++  const failure = new Error('finalize failed')
++  scheduler.complete = async (exec, result) => {
++    finalizeCallCount++
++    if (exec.callId === ToolCallId('c1') && finalizeCallCount === 1) {
++      throw failure
++    }
++    return finalize(exec, result)
++  }
++  const agent = await ctx.agentLoop.create(SessionId('no-retry-finalize'), { provider: 'mock', model: 'mock' })
++  const idle = waitForIdle(ctx, agent)
++  agent.followup(createUserMessage({ content: [{ type: 'text', text: 'go' }], source: { kind: 'user' } }))
++  await idle
++  // c1 finalize threw, c2 was also dispatched (parallel) and settled during drain,
++  // so it gets TOOL_OUTCOME_UNKNOWN from step recovery, not TOOL_NOT_STARTED.
++  expect(finalizeCallCount).toBe(1)
++  const results = events(agent).filter(e => e.type === 'tool/result')
++  expect(results.map(e => [e.data.message.toolCallId, e.data.error?.code])).toEqual([
++    [ToolCallId('c1'), 'TOOL_OUTCOME_UNKNOWN'],
++    [ToolCallId('c2'), 'TOOL_OUTCOME_UNKNOWN'],
++  ])
++})
++
+ describe('tool-call scheduler: grouping and barriers', () => {
+   it('runs parallel-safe siblings concurrently (all start before any completes)', async () => {
+     const adapter = new MockAdapter([
+diff --git a/packages/core/tools/README.i18n.yaml b/packages/core/tools/README.i18n.yaml
+index 68b03222e1..83c5632436 100644
+--- a/packages/core/tools/README.i18n.yaml
++++ b/packages/core/tools/README.i18n.yaml
+@@ -33,8 +33,8 @@
+   en: cbfe8317565ac62d
+   zh: 1e71c66941e50881
+ /deepseek-ai-dsh-tools/use-this-package/host-presentation-descriptors:
+-  en: 258e16bb367229e5
+-  zh: 7c1eb91062b4e4ad
++  en: 430030d135bf5363
++  zh: 0229814ad98974f6
+ /deepseek-ai-dsh-tools/understand-the-implementation:
+   en: ce7e776e9d516bdb
+   zh: 59d2751743db7795
+diff --git a/packages/core/tools/README.md b/packages/core/tools/README.md
+index a0ce675371..c9436aebc1 100644
+--- a/packages/core/tools/README.md
++++ b/packages/core/tools/README.md
+@@ -100,6 +100,8 @@ A tool can retain pure `presentCall()` and `presentResult()` methods for Host-lo
+ -----
+ 
+ <a id="understand-the-implementation"></a>
++After a scheduler failure, started calls drain and contiguous settled results and their contexts commit in model order. A finalization that already threw is never retried; the first scheduler failure remains authoritative.
++
+ ## Understand the implementation
+ 
+ <details>
+diff --git a/packages/core/tools/README.zh.md b/packages/core/tools/README.zh.md
+index 55e9c50020..3bc3861ac3 100644
+--- a/packages/core/tools/README.zh.md
++++ b/packages/core/tools/README.zh.md
+@@ -100,6 +100,8 @@ Agent 步骤的并发上限使用 [agent-loop 配置](../agent-loop/README.zh.md
+ -----
+ 
+ <a id="understand-the-implementation"></a>
++调度器失败后会排空已启动调用，并按模型顺序提交连续已就绪的结果及其上下文。已经抛错的收尾不会重试；始终保留最初的调度器错误。
++
+ ## 理解实现
+ 
+ <details>
+diff --git a/packages/core/tools/src/batch.ts b/packages/core/tools/src/batch.ts
+index e9a378d997..a3a33353dd 100644
+--- a/packages/core/tools/src/batch.ts
++++ b/packages/core/tools/src/batch.ts
+@@ -6,8 +6,8 @@
+  * and drains started calls.
+  *
+  * Abort records synthetic error results for skipped calls so replay stays
+- * valid. A terminal scheduler failure rejects after draining; the owning step
+- * records conservative recovery results before closing.
++ * valid. A terminal scheduler failure commits contiguous settled results after draining;
++ * the owning step records conservative recovery results for remaining calls.
+  * @module dsh-tools/batch
+  */
+ 
+@@ -111,8 +111,8 @@ function parseArguments(raw: string): unknown {
+  * drain and remains for the caller's next barrier. Results and contexts commit
+  * in model order. Abort stops starts, drains and commits started calls, accepts
+  * their contexts into the owning batch, records results for skipped calls, and
+- * returns an aborted outcome. Scheduler failure drains dispatches and rejects
+- * for the owning step to record recovery results.
++ * returns an aborted outcome. Scheduler failure drains dispatches and commits
++ * contiguous settled results unless a finalization already failed.
+  */
+ async function runGroup(
+   pipeline: ToolExecutionPipeline,
+@@ -131,6 +131,7 @@ async function runGroup(
+   let aborted: boolean = signal.aborted
+   let concluded = false
+   let schedulerFailure: { error: unknown } | undefined
++  let commitFailed = false
+   const throwSchedulerFailure = (): void => {
+     if (schedulerFailure !== undefined) throw schedulerFailure.error
+   }
+@@ -149,6 +150,16 @@ async function runGroup(
+     }
+   }
+ 
++  const runCommitReady = async (): Promise<void> => {
++    try {
++      await commitReady()
++    } catch (error: unknown) {
++      commitFailed = true
++      schedulerFailure ??= { error }
++      throw error
++    }
++  }
++
+   const inFlight = new Map<number, Promise<number>>()
+ 
+   const startCall = async (index: number): Promise<void> => {
+@@ -193,7 +204,7 @@ async function runGroup(
+       await startCall(nextToStart)
+       nextToStart++
+       throwSchedulerFailure()
+-      await commitReady()
++      await runCommitReady()
+       throwSchedulerFailure()
+       // Abort may arrive while pre-execute awaits.
+       if (signal.aborted) aborted = true
+@@ -209,7 +220,7 @@ async function runGroup(
+       const settledIndex = await Promise.race(inFlight.values())
+       inFlight.delete(settledIndex)
+       throwSchedulerFailure()
+-      await commitReady()
++      await runCommitReady()
+       throwSchedulerFailure()
+       // Abort may arrive while a tool or ordered commit awaits.
+ 
+@@ -219,6 +230,15 @@ async function runGroup(
+   } catch (error: unknown) {
+     schedulerFailure ??= { error }
+     await Promise.allSettled(inFlight.values())
++    // A failed finalization may have committed effects; never repeat it.
++    // oxlint-disable-next-line typescript/no-unnecessary-condition -- asynchronous finalization updates this flag.
++    if (!commitFailed) {
++      try {
++        await runCommitReady()
++      } catch (_error: unknown) {
++        // Preserve the first scheduler failure after draining settled results.
++      }
++    }
+     throw schedulerFailure.error
+   }
+ 
+diff --git a/packages/shell/bash-local/README.i18n.yaml b/packages/shell/bash-local/README.i18n.yaml
+index 52bb869d33..53ad301613 100644
+--- a/packages/shell/bash-local/README.i18n.yaml
++++ b/packages/shell/bash-local/README.i18n.yaml
+@@ -27,8 +27,8 @@
+   en: 3c580842cc8452af
+   zh: 5a156670a7cacc2a
+ /deepseek-ai-dsh-bash-local/use-this-package/adjusting-budgets-at-runtime:
+-  en: 1098db4c932a48f8
+-  zh: 33f78ab65dbfeb1d
++  en: 039d15a467daa979
++  zh: 27bcbe5d715340ed
+ /deepseek-ai-dsh-bash-local/understand-the-implementation:
+   en: 05e2abe4a25886fd
+   zh: 3f7f1326dc3c1d3f
+diff --git a/packages/shell/bash-local/README.md b/packages/shell/bash-local/README.md
+index 123451f3aa..1ea46152b4 100644
+--- a/packages/shell/bash-local/README.md
++++ b/packages/shell/bash-local/README.md
+@@ -69,6 +69,8 @@ Resolve with `onExpiry: 'none'` and await `execute` to run a command in the back
+ 
+ Execution budgets are volatile Config fields sampled when resolving each command. The Plugins page edits the active executor’s profile entry. Complete Config validation rejects invalid numbers and timer limits before a form write reaches disk.
+ 
++Spawned executions expose the subprocess provider’s managed range through `managedRange`. Callers can terminate and observe that range after the direct command exits, while `done` and `result()` continue to describe the direct command. Preparation that never produces a subprocess handle exposes no range; callers must not infer drainage from its absence.
++
+ -----
+ 
+ <a id="understand-the-implementation"></a>
+diff --git a/packages/shell/bash-local/README.zh.md b/packages/shell/bash-local/README.zh.md
+index a2b2853354..77fe25291b 100644
+--- a/packages/shell/bash-local/README.zh.md
++++ b/packages/shell/bash-local/README.zh.md
+@@ -69,6 +69,8 @@ if (result.timedOut) console.log('timed out after', result.timeoutMs)
+ 
+ 执行预算是解析每条命令时读取的 volatile Config 字段。插件页面编辑当前执行器的 profile 条目。完整 Config 验证在表单写入磁盘前拒绝无效数字和定时器上限。
+ 
++已启动的执行通过 `managedRange` 暴露 subprocess 提供方管理的进程范围。调用方可以在直接命令退出后终止并观察该范围，而 `done` 与 `result()` 继续描述直接命令。未生成 subprocess 句柄的准备过程不暴露范围；调用方不得把其缺失视为排空。
++
+ -----
+ 
+ <a id="understand-the-implementation"></a>
+diff --git a/packages/shell/bash-local/src/index.ts b/packages/shell/bash-local/src/index.ts
+index 373c739760..5e5e0fca77 100644
+--- a/packages/shell/bash-local/src/index.ts
++++ b/packages/shell/bash-local/src/index.ts
+@@ -95,6 +95,8 @@ export function assertServiceableBashConfig(config: Config): void {
+  * composition teardown) even across an executor reload.
+  */
+ export class LocalBashExecutor extends ShellExecutor {
++  override get supportsManagedRange(): boolean { return true }
++
+   static inject = ['subprocess']
+ 
+   static Config = z.object({
+@@ -300,6 +302,10 @@ export class LocalBashExecutor extends ShellExecutor {
+     let stderrOffset = 0
+     let resultPromise: Promise<ShellRunResult> | undefined
+     const proc: ShellExecution = {
++      ...(running === undefined ? {} : { managedRange: {
++        terminate: () => { running.terminate() },
++        waitForExit: (signal?: AbortSignal) => running.waitForExit(signal),
++      } }),
+       status: 'running',
+       exitCode: null,
+       signal: null,
+diff --git a/packages/shell/shell/README.i18n.yaml b/packages/shell/shell/README.i18n.yaml
+index 2255ab1dba..1724ab437c 100644
+--- a/packages/shell/shell/README.i18n.yaml
++++ b/packages/shell/shell/README.i18n.yaml
+@@ -33,8 +33,8 @@
+   en: ddcf8a0c7a45e8d3
+   zh: e4ee99e2e27234fe
+ /deepseek-ai-dsh-shell/use-this-package/the-shared-exit-status-contract:
+-  en: f4125282c1deab36
+-  zh: 46b8ee789ae68a9a
++  en: 2588664818dee2b8
++  zh: 522968cac7c455fe
+ /deepseek-ai-dsh-shell/understand-the-implementation:
+   en: d2192b68c2faf92b
+   zh: 7678a2fd356d8587
+diff --git a/packages/shell/shell/README.md b/packages/shell/shell/README.md
+index 0e87c9f25e..c28ddbd84e 100644
+--- a/packages/shell/shell/README.md
++++ b/packages/shell/shell/README.md
+@@ -66,6 +66,8 @@ The seam is not an executor: mount exactly one provider per composition, and the
+ 
+ Tool results end with a machine-readable exit marker — `[exit code: N]` or `[killed by signal: X]` — so the model can always tell how a command ended. The seam owns that marker format and the `parseExitStatus` helper that splits a rendered result back into its output body and structured exit status, keeping the `bash` and `pwsh` tools from drifting on it.
+ 
++Providers advertise `supportsManagedRange` when spawned executions expose a `managedRange` handle. Its `terminate()` remains available after direct-command exit, and `waitForExit(signal)` returns true only when the provider-managed range is empty, false on cancellation, or rejects on observation failure. A missing handle cannot certify drainage. `done`, `result()` and `kill()` retain their direct-command semantics; range drainage is a separate observation. The provider determines containment coverage; this interface does not strengthen a weaker process-tree backend.
++
+ -----
+ 
+ <a id="understand-the-implementation"></a>
+diff --git a/packages/shell/shell/README.zh.md b/packages/shell/shell/README.zh.md
+index cf12395912..b2662dfa56 100644
+--- a/packages/shell/shell/README.zh.md
++++ b/packages/shell/shell/README.zh.md
+@@ -66,6 +66,8 @@ seam 本身不是执行器：每个组合只挂载一个提供方，工具即可
+ 
+ 工具结果以机器可读的退出标记结尾——`[exit code: N]` 或 `[killed by signal: X]`——模型因此总能知道命令如何结束。seam 拥有该标记格式，以及把渲染结果拆回输出正文与结构化退出状态的 `parseExitStatus` 辅助函数，使 `bash` 与 `pwsh` 两个工具永远不会在此漂移。
+ 
++提供方通过 `supportsManagedRange` 声明已启动的执行会暴露 `managedRange` 句柄。其 `terminate()` 在直接命令退出后仍可调用；`waitForExit(signal)` 仅在提供方管理的进程范围为空时返回 true，取消时返回 false，观察失败时拒绝。句柄缺失不能证明排空。`done`、`result()` 和 `kill()` 保持直接命令语义；范围排空是独立的观察结果。隔离覆盖范围由提供方决定，此接口不会加强较弱的进程树后端。
++
+ -----
+ 
+ <a id="understand-the-implementation"></a>
+diff --git a/packages/shell/shell/src/index.ts b/packages/shell/shell/src/index.ts
+index 939aff271c..ab8f58063e 100644
+--- a/packages/shell/shell/src/index.ts
++++ b/packages/shell/shell/src/index.ts
+@@ -16,6 +16,7 @@ export type {
+   ShellExecution,
+   ShellExpiryPolicy,
+   ShellProcess,
++  ShellManagedRange,
+   ShellProcessRead,
+   ShellProcessStatus,
+   ShellRunResult,
+@@ -66,6 +67,11 @@ export abstract class ShellExecutor extends Service {
+     super(ctx, 'shell')
+   }
+ 
++  /** Whether spawned executions expose provider-owned range observation and termination. */
++  get supportsManagedRange(): boolean {
++    return false
++  }
++
+   /**
+    * The sandbox mode this executor applies by default, or `undefined` when it
+    * does not sandbox commands.
+diff --git a/packages/shell/shell/src/types.ts b/packages/shell/shell/src/types.ts
+index 62665a7e0f..06d01ce7ca 100644
+--- a/packages/shell/shell/src/types.ts
++++ b/packages/shell/shell/src/types.ts
+@@ -179,6 +179,14 @@ export interface ShellProcessRead {
+   stderrSpillPath?: string
+ }
+ 
++/** A provider-owned execution range; direct-command settlement is independent. */
++export interface ShellManagedRange {
++  /** Idempotently terminate the range, including after the direct command exits. */
++  terminate(): void
++  /** True only when the range is empty; false on cancellation; rejects on observation failure. */
++  waitForExit(signal?: AbortSignal): Promise<boolean>
++}
++
+ /**
+  * A background process handle returned by {@link ShellExecutor.start}. It is the
+  * only access path; buffered output remains readable after exit. Composition
+@@ -186,6 +194,8 @@ export interface ShellProcessRead {
+  * awaits {@link done}; an executor-only reload leaves them running.
+  */
+ export interface ShellProcess {
++  /** Absent when this execution has no provider-managed range handle. */
++  readonly managedRange?: ShellManagedRange
+   /** Process lifecycle state (settled exactly once). */
+   status: ShellProcessStatus
+   /** Exit code once finished (null = killed by signal / still running). */
+diff --git a/packages/shell/tool-bash/README.i18n.yaml b/packages/shell/tool-bash/README.i18n.yaml
+index c1244306b1..f10561e280 100644
+--- a/packages/shell/tool-bash/README.i18n.yaml
++++ b/packages/shell/tool-bash/README.i18n.yaml
+@@ -33,11 +33,11 @@
+   en: 472beeb895ca46cf
+   zh: ba110c9f62f7d5b8
+ /deepseek-ai-dsh-tool-bash/use-this-package/what-can-go-wrong:
+-  en: cc9a6cc87468d73a
+-  zh: aaa94162ef9de2f0
++  en: 19bf6283e379405c
++  zh: c3b218463c4f67b7
+ /deepseek-ai-dsh-tool-bash/understand-the-implementation:
+-  en: 165313776a851b51
+-  zh: 828f48807036aff0
++  en: ae260ed7256766c2
++  zh: 0b5f884d413501b3
+ /deepseek-ai-dsh-tool-bash/understand-the-implementation/design-philosophy:
+   en: 9332353fda6ac7be
+   zh: 45c17e5e83478032
+@@ -48,8 +48,8 @@
+   en: 56dae7757fab0a79
+   zh: 7930235dc0490c73
+ /deepseek-ai-dsh-tool-bash/understand-the-implementation/rendering-story:
+-  en: 167c045d6a6278cc
+-  zh: 3f17ee8d31e0bbad
++  en: 68bb66059833e4b6
++  zh: c1538eadb0433620
+ /deepseek-ai-dsh-tool-bash/further-exploration:
+   en: 15b7464d9a8ddd6a
+   zh: 471dba4b69e29aab
+diff --git a/packages/shell/tool-bash/README.md b/packages/shell/tool-bash/README.md
+index 045344c881..cc3caba2ec 100644
+--- a/packages/shell/tool-bash/README.md
++++ b/packages/shell/tool-bash/README.md
+@@ -73,6 +73,8 @@ When the mounted executor confines commands (for example `dsh-bash-sandbox`), a
+ 
+ A composition with no executor provider never activates the tool. Background calls without the job runtime fail with `background jobs unavailable: load @deepseek-ai/dsh-jobs and @deepseek-ai/dsh-tool-jobs`, and `sandbox_permissions` without a sandboxing executor fails with `sandbox_permissions is not available in this composition (no sandboxing executor to escalate)`. `enableRunInBackground: false` removes the parameter and rejects a forced background call at execution time.
+ 
++`completion_scope: "managed-range"` requires a capable executor and enabled job registry. It registers a `bash-range-v1` job whose completed or killed outcome certifies that the provider-managed range is empty. Direct-command exit fields remain separate. Admission refusal never falls back to ordinary foreground execution. With promotion disabled, the tool requests cancellation at the wait timeout; cleanup waits at most `rangeCleanupTimeoutMs` (default 10000 ms, a positive integer within the JavaScript timer range). An unfinished cleanup returns a job handle; observation failure remains a failed job visible through `job_list`. Range uncertainty never certifies successful completion. Omitting the argument retains ordinary command completion.
++
+ -----
+ 
+ <a id="understand-the-implementation"></a>
+@@ -83,6 +85,8 @@ A composition with no executor provider never activates the tool. Background cal
+ 
+ Structured foreground and background results expose `cwd`, the executor-resolved launch directory. Persisted presentation metadata carries the same value so settled cards retain the directory used by that call. A command’s own `cd` does not change this launch value; native result text remains stdout, stderr, and status markers.
+ 
++Persisted presentation metadata also carries `execution` with `schemaVersion: 1`, `subject: "shell-command"`, and the result `kind`. Foreground results retain `exitCode`, `signal`, `timedOut`, `aborted`, and optional `stopped` from the validated result; background and promoted acknowledgements retain only `jobId` alongside the version, subject, and kind. These fields describe the outer shell command, not individual pipeline members or acceptance success. Errors without a committed result and older cwd-only records have no execution facts. Metadata does not enter model content or change result rendering.
++
+ This section explains the design decisions behind the tool and points at the code that realizes them; the observable behavior is fully covered in [Use this package](#use-this-package).
+ 
+ ### Design philosophy
+@@ -108,6 +112,8 @@ The tool resolves the workdir before `ctx.shell.resolve()` runs: an explicit rel
+ 
+ The result text is stdout, then a marked `[stderr]` section, then conditional markers: truncation notice, sandbox denial (plus the same-turn escalation hint when the composition advertises escalation), timeout, signal, and exit code — each on its own line. The exit marker doubles as the UI card's exit-status pill: the shared `parseExitStatus` from `dsh-shell` consumes it from the output body, so replay shows the pill without duplicating the marker.
+ 
++Controlled foreground results additionally persist `execution.managedRange`; old records without it do not certify range drainage.
++
+ </details>
+ 
+ -----
+diff --git a/packages/shell/tool-bash/README.zh.md b/packages/shell/tool-bash/README.zh.md
+index 53d2b1984e..856823be62 100644
+--- a/packages/shell/tool-bash/README.zh.md
++++ b/packages/shell/tool-bash/README.zh.md
+@@ -73,6 +73,8 @@ kind: "package-reference"
+ 
+ 没有执行器提供方的组合永远不会激活该工具。没有任务运行时的后台调用会以 `background jobs unavailable: load @deepseek-ai/dsh-jobs and @deepseek-ai/dsh-tool-jobs` 失败；没有沙箱执行器时的 `sandbox_permissions` 会以 `sandbox_permissions is not available in this composition (no sandboxing executor to escalate)` 失败。`enableRunInBackground: false` 会移除该参数，并在执行时拒绝强制后台调用。
+ 
++`completion_scope: "managed-range"` 要求执行器支持范围观察，并启用任务注册表。它注册 `bash-range-v1` 任务，该任务的 completed 或 killed 结果证明提供方管理的进程范围已为空。直接命令退出字段保持独立。注册被拒绝时不会退回普通前台执行。禁用转后台时，工具在等待超时后请求取消；清理最多等待 `rangeCleanupTimeoutMs`（默认 10000 毫秒，须为 JavaScript 定时器范围内的正整数）。清理未完成时返回任务句柄；观察失败则保留可通过 `job_list` 发现的失败任务。范围未知不能证明成功完成。省略该参数保持普通命令完成语义。
++
+ -----
+ 
+ <a id="understand-the-implementation"></a>
+@@ -83,6 +85,8 @@ kind: "package-reference"
+ 
+ 前台与后台的结构化结果均包含 `cwd`，即执行器解析后的启动目录。持久化展示元数据携带同一值，使已结束的调用卡片保留该次调用使用的目录。命令内部的 `cd` 不会改变这个启动值；原生结果文本仍由 stdout、stderr 与状态标记组成。
+ 
++持久化的展示元数据还包含 `execution`，其中 `schemaVersion: 1`、`subject: "shell-command"` 和结果的 `kind` 标明格式与对象。前台结果保留已校验返回值中的 `exitCode`、`signal`、`timedOut`、`aborted` 及可选的 `stopped`；后台和转后台回执仅在版本、对象与种类之外保留 `jobId`。这些字段描述外层 shell 命令，不代表管道内每个进程的状态或验收通过。没有已提交结果的错误及旧的仅含 cwd 的记录不提供执行事实。元数据不进入模型内容，也不改变结果渲染。
++
+ 本节解释工具背后的设计决策，并指出实现它们的代码位置；可观察行为已在[使用本包](#use-this-package)中完整说明。
+ 
+ ### 设计理念
+@@ -108,6 +112,8 @@ kind: "package-reference"
+ 
+ 结果文本为 stdout，然后是带标记的 `[stderr]` 区段，再是条件标记：截断通知、沙箱拒绝（组合声明升权时附带同轮次升权提示）、超时、信号与退出码——每个占一行。退出标记同时充当 UI 卡片的退出状态 pill：`dsh-shell` 共享的 `parseExitStatus` 会从输出体中消费它，因此回放显示 pill 而不重复标记。
+ 
++受控前台结果还会持久化 `execution.managedRange`；缺少此字段的旧记录不能证明范围排空。
++
+ </details>
+ 
+ -----
+diff --git a/packages/shell/tool-bash/package.json b/packages/shell/tool-bash/package.json
+index eea06255dc..d9a5263e31 100644
+--- a/packages/shell/tool-bash/package.json
++++ b/packages/shell/tool-bash/package.json
+@@ -70,6 +70,8 @@
+     "@deepseek-ai/dsh-user-approval": "workspace:*",
+     "@deepseek-ai/cordis": "workspace:~",
+     "@deepseek-ai/dsh-session-projection": "workspace:*",
+-    "@deepseek-ai/dsh-working-directory": "workspace:*"
++    "@deepseek-ai/dsh-working-directory": "workspace:*",
++    "@deepseek-ai/cordis-plugin-loader": "workspace:~",
++    "@deepseek-ai/cordis-plugin-include": "workspace:~"
+   }
+ }
+diff --git a/packages/shell/tool-bash/src/background.ts b/packages/shell/tool-bash/src/background.ts
+index 49da48b00b..83522a91e1 100644
+--- a/packages/shell/tool-bash/src/background.ts
++++ b/packages/shell/tool-bash/src/background.ts
+@@ -127,3 +127,81 @@ export function processJob(
+     done,
+   }
+ }
++
++/** Wait for direct settlement, retaining observation errors and allowing cancellation. */
++async function settledBeforeAbort(done: Promise<void>, signal: AbortSignal): Promise<boolean> {
++  if (signal.aborted) return false
++  let abort!: () => void
++  const cancelled = new Promise<false>((resolve) => { abort = () => { resolve(false) } })
++  signal.addEventListener('abort', abort, { once: true })
++  try {
++    return await Promise.race([done.then(() => true), cancelled])
++  } finally {
++    signal.removeEventListener('abort', abort)
++  }
++}
++
++/**
++ * Strong job producer: completed/killed certifies the provider range is empty.
++ * A failed producer never certifies drainage. Cancellation bounds cleanup but
++ * cannot turn an unknown range into a successful terminal outcome.
++ * @param start Starts the process with the job cancellation signal.
++ * @param outcome Computes the direct-command outcome after the range drains.
++ * @param cleanupTimeoutMs Maximum time to confirm range drainage after cancellation.
++ * @returns Job hooks whose terminal success requires a confirmed empty range.
++ */
++export function managedProcessJob(
++  start: (signal: AbortSignal) => Promise<ShellProcess>,
++  outcome: (process: ShellProcess) => JobOutcome,
++  cleanupTimeoutMs: number,
++): JobHooks {
++  const controller = new AbortController()
++  const cleanup = new AbortController()
++  let process: ShellProcess | undefined
++  let timer: ReturnType<typeof setTimeout> | undefined
++  let finished = false
++  const terminate = () => {
++    timer ??= setTimeout(() => { cleanup.abort() }, cleanupTimeoutMs)
++    if (process?.managedRange) process.managedRange.terminate()
++    else process?.kill()
++  }
++  const done: Promise<JobOutcome> = (async () => {
++    try {
++      process = await start(controller.signal)
++      const range = process.managedRange
++      if (range === undefined) throw new Error('managed range unavailable for this execution')
++      if (controller.signal.aborted) terminate()
++      let drained = await range.waitForExit(controller.signal)
++      if (!drained && controller.signal.aborted) {
++        terminate()
++        drained = await range.waitForExit(cleanup.signal)
++      }
++      if (!drained) throw new Error('managed range drain not confirmed within cleanup budget')
++      let directSettled = await settledBeforeAbort(process.done, controller.signal)
++      if (!directSettled && controller.signal.aborted) {
++        terminate()
++        directSettled = await settledBeforeAbort(process.done, cleanup.signal)
++      }
++      if (!directSettled) throw new Error('direct command settlement not confirmed within cleanup budget')
++      return controller.signal.aborted ? { status: 'killed', detail: 'managed range drained after cancellation' } : outcome(process)
++    } catch (error: unknown) {
++      // Best effort cleanup does not erase the original observation failure.
++      try {
++        terminate()
++        await process?.managedRange?.waitForExit(cleanup.signal)
++      } catch (_cleanupError: unknown) { /* original failure remains authoritative */ }
++      return { status: 'failed', detail: error instanceof Error ? error.message : String(error) }
++    } finally {
++      finished = true
++      if (timer !== undefined) clearTimeout(timer)
++    }
++  })()
++  return {
++    cancel: (reason) => {
++      if (finished || controller.signal.aborted) return
++      controller.abort(reason)
++      terminate()
++    },
++    done,
++  }
++}
+diff --git a/packages/shell/tool-bash/src/index.ts b/packages/shell/tool-bash/src/index.ts
+index 39a2a20369..fb5f4f6237 100644
+--- a/packages/shell/tool-bash/src/index.ts
++++ b/packages/shell/tool-bash/src/index.ts
+@@ -27,9 +27,13 @@ import { ESCALATION_TARGETS, approveEscalation, sandboxPermissionsDescription, v
+ import type { SandboxPolicyService } from '@deepseek-ai/dsh-sandbox-policy'
+ import { DSH_ENV_PREFIX } from '@deepseek-ai/dsh-shell'
+ import type { ShellExecRequest, ShellExecSpec, ShellExecution, ShellRunResult } from '@deepseek-ai/dsh-shell'
+-import { processJob, processOutcome, processSources, ringDelta } from './background.ts'
++import { managedProcessJob, processJob, processOutcome, processSources, ringDelta } from './background.ts'
+ import { parseExitStatus, renderJobRead, renderPromoted, renderResult } from './render.ts'
+ 
++declare module '@deepseek-ai/dsh-jobs' {
++  interface JobKindMap { 'bash-range-v1': 'bash-range-v1' }
++}
++
+ export const name = 'tool-bash'
+ export const inject = ['tools', 'shell', 'systemPrompt', 'shellEnv', 'workingDirectory']
+ 
+@@ -50,12 +54,15 @@ export interface Config {
+    * controller) also runs under the deadline kill.
+    */
+   promoteOnTimeout?: boolean
++  /** Maximum wait for provider range cleanup after cancellation (default 10000 ms). */
++  rangeCleanupTimeoutMs?: number
+ }
+ 
+ /** Runtime configuration schema for the bash tool plugin. */
+ export const Config: z<Config> = z.object({
+   enableRunInBackground: z.boolean().default(true),
+   promoteOnTimeout: z.boolean().default(true),
++  rangeCleanupTimeoutMs: z.number().default(10000),
+ })
+ 
+ /** Parsed tool args; execute validates value constraints absent from ParameterSchemaSpec. */
+@@ -65,12 +72,17 @@ interface BashToolArgs {
+   timeoutMs?: number
+   workdir?: string
+   run_in_background?: boolean
++  completion_scope?: 'command' | 'managed-range'
+   sandbox_permissions?: string
+   /** Optional for an omitted or repeated effective mode; widening requires a non-empty reason. */
+   justification?: string
+ }
+ 
+ function validateBashArgs(args: BashToolArgs, effectiveMode: SandboxMode | undefined): void {
++  const completionScopes: readonly string[] = ['command', 'managed-range']
++  if (args.completion_scope !== undefined && !completionScopes.includes(args.completion_scope)) {
++    throw new Error('invalid completion_scope: expected command or managed-range')
++  }
+   if (args.command.trim().length === 0) {
+     throw new Error('invalid command: expected a non-empty string')
+   }
+@@ -187,6 +199,7 @@ function toolAborted(): HarnessError {
+ 
+ /** A registered command: its id, the process once the starter spawned it, and the reason an outside kill gave. */
+ interface StartedJob {
++  readonly managed: boolean
+   readonly id: JobId
+   readonly process: () => ShellExecution | undefined
+   readonly stopped: () => string | undefined
+@@ -200,6 +213,10 @@ const BACKGROUND_OUTPUT_PROPERTIES = {
+ } as const
+ 
+ export function apply(ctx: Context, config: Config = {}): void {
++  const rangeCleanupTimeoutMs = config.rangeCleanupTimeoutMs ?? 10000
++  if (!Number.isSafeInteger(rangeCleanupTimeoutMs) || rangeCleanupTimeoutMs <= 0 || rangeCleanupTimeoutMs > 2147483647) {
++    throw new Error('rangeCleanupTimeoutMs must be a positive timer-safe integer')
++  }
+   const backgroundEnabled = config.enableRunInBackground ?? true
+   // Keeping a timed-out command needs the whole background surface: the job
+   // tools to collect and stop it, and the registry itself at execution time.
+@@ -267,18 +284,19 @@ export function apply(ctx: Context, config: Config = {}): void {
+       let proc: ShellExecution | undefined
+       let stopped: string | undefined
+       const id = registry.start({
+-        kind: 'bash',
++        kind: args.completion_scope === 'managed-range' ? 'bash-range-v1' : 'bash',
+         label: args.command,
+         toolCall: { callId: exec.callId, rootCallId: exec.rootCallId },
+         ...exec.agent ? { owner: exec.agent.id } : {},
+         output: processSources(() => proc),
+         run: () => {
+-          const hooks = processJob(
++          const hooks = (args.completion_scope === 'managed-range' ? managedProcessJob : processJob)(
+             async (signal) => {
+               proc = await ctx.shell.execute({ ...spec, signal })
+               return proc
+             },
+             started => processOutcome(started, escalationModes),
++            rangeCleanupTimeoutMs,
+           )
+           return {
+             done: hooks.done,
+@@ -291,7 +309,7 @@ export function apply(ctx: Context, config: Config = {}): void {
+           }
+         },
+       })
+-      return { id, process: () => proc, stopped: () => stopped }
++      return { managed: args.completion_scope === 'managed-range', id, process: () => proc, stopped: () => stopped }
+     }
+     /** Wait on a registered foreground command until it settles or the timeout passes. */
+     const waitOnJob = async (registry: JobRegistry, attached: StartedJob, exec: ToolExecution, spec: ShellExecSpec) => {
+@@ -305,11 +323,12 @@ export function apply(ctx: Context, config: Config = {}): void {
+        */
+       const stop = async (reason: string): Promise<JobView> => {
+         registry.kill(attached.id, owner, reason)
+-        const settled = await registry.wait(attached.id, timeoutMs, owner)
+-        if (settled.status !== 'running' && settled.status !== 'stopping') registry.remove(attached.id, owner)
++        const settled = await registry.wait(attached.id, attached.managed ? rangeCleanupTimeoutMs : timeoutMs, owner)
++        if (!attached.managed && settled.status !== 'running' && settled.status !== 'stopping') registry.remove(attached.id, owner)
+         return settled
+       }
+       let view: JobView
++      let waitTimedOut = false
+       try {
+         view = await registry.wait(attached.id, timeoutMs, owner, exec.signal)
+       } catch {
+@@ -319,7 +338,11 @@ export function apply(ctx: Context, config: Config = {}): void {
+         await stop('tool call aborted')
+         throw toolAborted()
+       }
+-      if ((view.status === 'running' || view.status === 'stopping') && attached.process() === undefined) {
++      if (attached.managed && !promote && (view.status === 'running' || view.status === 'stopping')) {
++        waitTimedOut = true
++        view = await stop('managed-range wait timed out')
++      }
++      if (!attached.managed && (view.status === 'running' || view.status === 'stopping') && attached.process() === undefined) {
+         // The wait expired while preparation still ran: nothing is running
+         // to keep, so this is the deadline's preparation timeout, with the
+         // settled empty result the executor's own deadline would have given.
+@@ -352,6 +375,11 @@ export function apply(ctx: Context, config: Config = {}): void {
+           ),
+         }
+       }
++      if (attached.managed && view.status === 'failed') {
++        // Keep the failed job discoverable; never wait indefinitely on direct
++        // command output after the range observation/cleanup budget failed.
++        throw new Error(`managed range unconfirmed: ${view.detail ?? 'producer failed'}`)
++      }
+       // Settled while the call waited: the model never saw the id, so the
+       // record leaves the registry with this result. The process handle keeps
+       // the split streams and classification the foreground result needs.
+@@ -363,7 +391,11 @@ export function apply(ctx: Context, config: Config = {}): void {
+       if (process === undefined) throw new Error(view.detail)
+       const result = await process.result()
+       const stopped = attached.stopped()
+-      return { kind: 'foreground' as const, ...canonicalBashResult(result, spec.workdir), ...stopped !== undefined ? { stopped } : {} }
++      return { kind: 'foreground' as const, ...canonicalBashResult(result, spec.workdir),
++        ...(attached.managed ? { managedRange: (view.status === 'completed' || view.status === 'killed') ? 'drained' as const : 'unknown' as const } : {}),
++        ...(waitTimedOut ? { timedOut: true } : {}),
++        ...stopped !== undefined ? { stopped } : {},
++      }
+     }
+     return defineTool({
+       name: 'bash',
+@@ -384,6 +416,9 @@ export function apply(ctx: Context, config: Config = {}): void {
+             : 'Timeout in milliseconds. The executor applies its configured default and cap, and kills the command on expiry.',
+         },
+         workdir: { type: 'string', description: 'Working directory for this command. Defaults to the session workspace; a relative path is resolved against it.' },
++        ...(background && ctx.shell.supportsManagedRange) ? {
++          completion_scope: { type: 'string', enum: ['command', 'managed-range'], description: 'Default command waits for the direct command only. managed-range requires a capable executor and job registry, and waits for the provider-managed range to become empty; timeout may return a job handle.' },
++        } : {},
+         ...background ? {
+           run_in_background: { type: 'boolean' as const, description: 'Run in the background and return a job id immediately (collect with job_output, stop with job_kill). No timeout applies.' },
+         } : {},
+@@ -430,6 +465,7 @@ export function apply(ctx: Context, config: Config = {}): void {
+                 timedOut: { type: 'boolean', required: true },
+                 aborted: { type: 'boolean', required: true },
+                 stopped: { type: 'string' },
++                managedRange: { type: 'string', enum: ['drained', 'unknown'] },
+                 timeoutMs: { type: 'number', required: true },
+                 stdout: {
+                   type: 'object',
+@@ -473,12 +509,32 @@ export function apply(ctx: Context, config: Config = {}): void {
+               ? renderPromoted(value)
+               : renderResult(value as { kind: 'foreground' } & ShellRunResult, escalationModes),
+         }],
+-        presentationMeta: (_args, value) => ({ cwd: value.cwd }),
++        presentationMeta: (_args, value) => ({
++          cwd: value.cwd,
++          // These facts describe the outer shell command, not a process inside a pipeline.
++          execution: {
++            schemaVersion: 1,
++            subject: 'shell-command',
++            kind: value.kind,
++            ...(value.kind === 'foreground' ? {
++              ...(value.managedRange !== undefined ? { managedRange: value.managedRange } : {}),
++              exitCode: value.exitCode,
++              signal: value.signal,
++              timedOut: value.timedOut,
++              aborted: value.aborted,
++              ...(value.stopped !== undefined ? { stopped: value.stopped } : {}),
++            } : { jobId: value.jobId }),
++          },
++        }),
+       },
+       async execute(args: BashToolArgs, exec) {
+         // Description is display metadata; workdir defaults to the caller's session.
+         const standingPolicy = resolveSandboxPolicy(exec)
+         validateBashArgs(args, standingPolicy?.mode)
++        const managed = args.completion_scope === 'managed-range'
++        if (managed && (jobs === undefined || !ctx.shell.supportsManagedRange)) {
++          throw new Error('managed-range completion requires a capable shell executor and enabled job registry')
++        }
+         const approvedMode = args.sandbox_permissions !== undefined && args.justification !== undefined
+           ? await approveBashEscalation(args.sandbox_permissions, args.justification, exec, standingPolicy)
+           : undefined
+@@ -513,6 +569,12 @@ export function apply(ctx: Context, config: Config = {}): void {
+         // when the timeout passes. Admission refused at the start (the owner's
+         // job limit, no controller) runs the command under the deadline kill
+         // instead, exactly as a composition without a registry does.
++        if (managed && jobs !== undefined) {
++          if (exec.signal.aborted) throw toolAborted()
++          const spec = ctx.shell.resolve({ ...request, onExpiry: 'none' })
++          // Strong completion cannot fall back to an untracked foreground command.
++          return waitOnJob(jobs, startJob(jobs, args, exec, spec), exec, spec)
++        }
+         if (jobs !== undefined && promote) {
+           const spec = ctx.shell.resolve({ ...request, onExpiry: 'none' })
+           let attached: StartedJob | undefined
+diff --git a/packages/shell/tool-bash/src/render.ts b/packages/shell/tool-bash/src/render.ts
+index 2e78b6201f..db2b57e8f9 100644
+--- a/packages/shell/tool-bash/src/render.ts
++++ b/packages/shell/tool-bash/src/render.ts
+@@ -26,7 +26,7 @@ function streamText(output: CollectedOutput): string {
+  * @returns the model-facing text: output body (or `(no output)`), then any timeout/stopped/signal/exit markers, each on its own line.
+  */
+ export function renderResult(
+-  result: ShellRunResult & { stopped?: string },
++  result: ShellRunResult & { stopped?: string; managedRange?: 'drained' | 'unknown' },
+   escalationModes: readonly SandboxMode[] = [],
+ ): string {
+   const out = streamText(result.stdout)
+@@ -54,6 +54,7 @@ export function renderResult(
+   // A kill from outside the call (the human stopping its job) is not a
+   // command failure: the reason tells the model not to retry.
+   if (result.stopped !== undefined) markers.push(`[stopped: ${result.stopped}]`)
++  if (result.managedRange !== undefined) markers.push(`[managed range: ${result.managedRange}]`)
+   if (result.signal !== null) {
+     markers.push(`[killed by signal: ${result.signal}]`)
+   } else if (result.exitCode !== 0) {
+diff --git a/packages/shell/tool-bash/tests/background.spec.ts b/packages/shell/tool-bash/tests/background.spec.ts
+index add9714ac4..8c92a5697b 100644
+--- a/packages/shell/tool-bash/tests/background.spec.ts
++++ b/packages/shell/tool-bash/tests/background.spec.ts
+@@ -273,6 +273,7 @@ describe('foreground commands as jobs', () => {
+     expect(result.isError).toBe(false)
+     if (result.isError) throw new Error('expected a foreground result')
+     expect(result.value).toMatchObject({ kind: 'foreground', signal: 'SIGTERM', stopped: 'cancelled by the user' })
++    expect(result.meta).toMatchObject({ execution: { kind: 'foreground', exitCode: null, signal: 'SIGTERM', stopped: 'cancelled by the user' } })
+     expect(text(result)).toBe('(no output)\n[stopped: cancelled by the user]\n[killed by signal: SIGTERM]')
+     expect(ctx.jobs.list()).toEqual([])
+   })
+@@ -283,6 +284,7 @@ describe('foreground commands as jobs', () => {
+     const result = await call(ctx, { command: 'true', description: 'test command' })
+     expect(result.isError).toBe(true)
+     expect(text(result)).toBe('Error: spawn bash ENOENT')
++    expect(result.meta).toBeUndefined()
+     expect(ctx.jobs.list()).toEqual([])
+   })
+ 
+@@ -305,6 +307,7 @@ describe('foreground commands as jobs', () => {
+     const result = await pending
+     expect(result.isError).toBe(true)
+     expect(result.error).toMatchObject({ message: 'tool call aborted', info: { name: 'AbortError', code: TOOL_ABORTED } })
++    expect(result.meta).toBeUndefined()
+     // The kill is this call's own: the settlement was awaited (so no notice
+     // follows the abort the result already carries) and the record left.
+     expect(seen).toEqual(['registered', 'stopping', 'settled:killed:signal: SIGTERM; tool call aborted:true', 'removed'])
+@@ -385,6 +388,10 @@ describe('foreground commands as jobs', () => {
+       agent: owner,
+     })
+     expect(text(result)).toContain('moved to background job')
++    expect(result.meta).toEqual({
++      cwd: process.cwd(),
++      execution: { schemaVersion: 1, subject: 'shell-command', kind: 'promoted', jobId: ctx.jobs.list(owner.id)[0]!.id },
++    })
+     const owned = ctx.jobs
+     const job = owned.list(owner.id)[0]
+     expect(job).toBeDefined()
+diff --git a/packages/shell/tool-bash/tests/integration.spec.ts b/packages/shell/tool-bash/tests/integration.spec.ts
+index fb4f88097d..190daf11bb 100644
+--- a/packages/shell/tool-bash/tests/integration.spec.ts
++++ b/packages/shell/tool-bash/tests/integration.spec.ts
+@@ -3,7 +3,10 @@ import * as PtcToolExecutor from '@deepseek-ai/dsh-tool-executor-ptc'
+ import { createUserMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
+ import { afterEach, describe, expect, it, vi } from 'vitest'
+ import { Context } from '@deepseek-ai/cordis'
+-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
++import Loader from '@deepseek-ai/cordis-plugin-loader'
++import Include from '@deepseek-ai/cordis-plugin-include'
++import { pathToFileURL } from 'node:url'
++import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+ import { tmpdir } from 'node:os'
+ import { join } from 'node:path'
+ import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
+@@ -26,19 +29,58 @@ import { MockAdapter, textResponse, toolCallResponse } from '../../../core/agent
+  * (tool/call + tool/result session events, the generic `ctx.jobs` runtime,
+  * agent.inject completion notices).
+  */
+-async function harness(adapter: MockAdapter, sessionRoot?: string, dshHome?: string) {
++async function harness(adapter: MockAdapter, sessionRoot?: string, dshHome?: string, fromConfig = false) {
+   const ctx = new Context()
+   await mountAgentLoopTestDependencies(ctx, { workingDirectory: true })
+-  if (sessionRoot !== undefined) {
+-    await ctx.plugin(JsonlSessionPersistence, { root: sessionRoot, compression: 'none' })
++  if (fromConfig) {
++    if (sessionRoot === undefined) throw new Error('config fixture requires a persistence directory')
++    mkdirSync(sessionRoot, { recursive: true })
++    const configFile = join(sessionRoot, 'cordis.yml')
++    writeFileSync(configFile, [
++      '- id: persistence', '  name: persistence', '  config:', `    root: ${JSON.stringify(sessionRoot)}`, '    compression: none',
++      '- id: loop', '  name: loop', '  config:', '    agents: []',
++      '- id: registry', '  name: registry', '- id: jobs', '  name: jobs',
++      '- id: subprocess', '  name: subprocess', '- id: env', '  name: env',
++      '- id: executor', '  name: executor', '  config:', '    timeoutMs: 10000',
++      '- id: bash', '  name: bash', '',
++    ].join('\n'))
++    await ctx.plugin(Loader)
++    ctx.loader.builtins.include = Include
++    ctx.loader.internal = {
++      version: 'v2', loadCache: new Map(),
++      async import(specifier: string) {
++        switch (specifier) {
++          case 'persistence': return JsonlSessionPersistence
++          case 'loop': return { default: AgentLoop }
++          case 'registry': return { default: LocalJobRegistry }
++          case 'jobs': return ToolJobs
++          case 'subprocess': return { default: LocalSubprocessRuntime }
++          case 'env': return BashEnvPlugin
++          case 'executor': return { default: LocalBashExecutor }
++          case 'bash': return ToolBash
++          default: throw new Error(`Unexpected test plugin: ${specifier}`)
++        }
++      },
++      register(): never { throw new Error('Unexpected module hook registration') },
++      getOrCreateModuleJob(): never { throw new Error('Unexpected module job creation') },
++      resolveSync(): never { throw new Error('Unexpected synchronous module resolution') },
++      load(): never { throw new Error('Unexpected module load') },
++    }
++    await ctx.loader.create({ name: 'cordis:include', config: { path: pathToFileURL(configFile).href } })
++    await ctx.loader.await()
++    for (const entry of ctx.loader.entries()) await entry.fiber?.await()
++  } else {
++    if (sessionRoot !== undefined) {
++      await ctx.plugin(JsonlSessionPersistence, { root: sessionRoot, compression: 'none' })
++    }
++    await ctx.plugin(AgentLoop, { agents: [] })
++    await ctx.plugin(LocalJobRegistry)
++    await ctx.plugin(ToolJobs)
++    await ctx.plugin(LocalSubprocessRuntime)
++    await ctx.plugin(BashEnvPlugin, dshHome === undefined ? {} : { dshHome })
++    await ctx.plugin(LocalBashExecutor, { timeoutMs: 10_000 })
++    await ctx.plugin(ToolBash)
+   }
+-  await ctx.plugin(AgentLoop, { agents: [] })
+-  await ctx.plugin(LocalJobRegistry)
+-  await ctx.plugin(ToolJobs)
+-  await ctx.plugin(LocalSubprocessRuntime)
+-  await ctx.plugin(BashEnvPlugin, dshHome === undefined ? {} : { dshHome })
+-  await ctx.plugin(LocalBashExecutor, { timeoutMs: 10_000 })
+-  await ctx.plugin(ToolBash)
+   ctx.llm.registerAdapter(['mock'], adapter)
+   return ctx
+ }
+@@ -210,6 +252,84 @@ describe('bash tool through the agent loop', () => {
+     expect(resultText(toolResult)).toContain('[exit code: 9]')
+   })
+ 
++  it('replays execution facts and legacy cwd-only metadata without running commands or adding model content', async () => {
++    const root = realpathSync(mkdtempSync(join(tmpdir(), 'dsh-bash-execution-replay-')))
++    dirs.push(root)
++    const marker = join(root, 'executions')
++    const adapter = new MockAdapter([
++      toolCallResponse('call-ok', 'bash', { command: `printf 'once\\n' >> '${marker}'; printf 'OK\\n'`, description: 'Direct successful command' }),
++      toolCallResponse('call-fail', 'bash', { command: 'printf "OK\\n"; exit 3', description: 'Direct failing command' }),
++      textResponse('Recorded both results.'),
++    ])
++    const ctx = await harness(adapter, join(root, 'sessions'), undefined, true)
++    const id = SessionId('bash-execution-replay')
++    try {
++      const agent = await ctx.agentLoop.create(id, { provider: 'mock', model: 'mock' }, { cwd: root })
++      agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Run the scripted commands' }], source: { kind: 'user' } }))
++      await waitForIdle(ctx, agent)
++      const log = events(agent)
++      const results = log.filter(event => event.type === 'tool/result')
++      expect(results).toHaveLength(2)
++      for (const [index, result] of results.entries()) {
++        const call = log.find(event => event.type === 'tool/call' && event.data.callId === result.data.message.toolCallId)
++        expect(call).toBeDefined()
++        expect(result.sourceEventSeqs).toEqual([call!.seq])
++        expect(result.data.meta).toEqual({
++          cwd: root,
++          execution: { schemaVersion: 1, subject: 'shell-command', kind: 'foreground', exitCode: index === 0 ? 0 : 3, signal: null, timedOut: false, aborted: false },
++        })
++        expect(result.data.message).not.toHaveProperty('meta')
++        expect(result.data).not.toHaveProperty('value')
++      }
++      expect(results.map(resultText)).toEqual(['OK\n', 'OK\n[exit code: 3]'])
++      const visibleResults = adapter.requests.at(-1)!.messages.filter(message => message.role === 'tool')
++      expect(visibleResults).toEqual(results.map(result => result.data.message))
++      expect(await ctx.sessions.flush(agent.session)).toBe(true)
++      await ctx.fiber.dispose()
++
++      const readerAdapter = new MockAdapter([])
++      const reader = await harness(readerAdapter, join(root, 'sessions'), undefined, true)
++      try {
++        const handle = await reader.sessionPersistence.open(id, 'read')
++        try {
++          const replay = await handle.read()
++          expect(replay.events).toEqual(log)
++          expect(replay.events.filter(event => event.type === 'tool/result')).toEqual(results)
++        } finally {
++          await handle.close()
++        }
++        // A synthetic old writer supplies only cwd in a separate test Session.
++        const legacyId = SessionId('bash-execution-legacy')
++        const legacyLog = log.map(event => event.type === 'tool/result'
++          ? { ...event, data: { ...event.data, meta: { cwd: root } } }
++          : event)
++        const legacyWriter = await reader.sessionPersistence.create({ ...agent.session.header, id: legacyId })
++        try {
++          await legacyWriter.append(legacyLog)
++        } finally {
++          await legacyWriter.close()
++        }
++        const legacyReader = await reader.sessionPersistence.open(legacyId, 'read')
++        try {
++          const replay = await legacyReader.read()
++          expect(replay.events).toEqual(legacyLog)
++          for (const event of replay.events.filter(event => event.type === 'tool/result')) {
++            expect(event.data.meta).toEqual({ cwd: root })
++            expect(event.data.meta).not.toHaveProperty('execution')
++          }
++        } finally {
++          await legacyReader.close()
++        }
++        expect(readerAdapter.requests).toHaveLength(0)
++        expect(readFileSync(marker, 'utf8')).toBe('once\n')
++      } finally {
++        await reader.fiber.dispose()
++      }
++    } finally {
++      await ctx.fiber.dispose()
++    }
++  })
++
+   it('background: start ack → completion wakes the idle agent with the output inline', async () => {
+     // The command blocks on a sentinel this test creates only after the agent
+     // has gone idle, so settlement cannot fold into the still-running turn.
+@@ -245,6 +365,7 @@ describe('bash tool through the agent loop', () => {
+     expect(firstResult.data.message.isError).toBe(false)
+     const jobId = /^started background job (bash-[0-9a-f]{16})$/.exec(resultText(firstResult))?.[1]
+     if (jobId === undefined) throw new Error('first tool result lacks a job id')
++    expect(firstResult.data.meta).toEqual({ cwd: process.cwd(), execution: { schemaVersion: 1, subject: 'shell-command', kind: 'background', jobId } })
+     // The turn closed with the task still running, so the notice cannot exist yet.
+     const isNotice = (e: SessionEvent): e is SessionEvent<'user/message'> =>
+       e.type === 'user/message' && e.data.source.kind === 'tool-jobs'
+diff --git a/packages/shell/tool-bash/tests/tools.spec.ts b/packages/shell/tool-bash/tests/tools.spec.ts
+index 415cd0504d..db22f1f5f5 100644
+--- a/packages/shell/tool-bash/tests/tools.spec.ts
++++ b/packages/shell/tool-bash/tests/tools.spec.ts
+@@ -275,6 +275,10 @@ describe('bash tool', () => {
+       stderr: { text: '', truncated: false },
+     })
+     expect(text(result)).toBe('hello\n')
++    expect(result.meta).toEqual({
++      cwd: process.cwd(),
++      execution: { schemaVersion: 1, subject: 'shell-command', kind: 'foreground', exitCode: 0, signal: null, timedOut: false, aborted: false },
++    })
+   })
+ 
+   it('reports (no output) for silent commands', async () => {
+@@ -292,9 +296,13 @@ describe('bash tool', () => {
+ 
+   it('reports non-zero exits without isError', async () => {
+     const ctx = await setup()
+-    const result = await call(ctx, 'bash', { command: 'echo failing; exit 3', description: 'test command' })
++    const result = await call(ctx, 'bash', { command: 'echo OK; exit 3', description: 'test command' })
+     expect(result.isError).toBe(false)
+-    expect(text(result)).toBe('failing\n[exit code: 3]')
++    expect(text(result)).toBe('OK\n[exit code: 3]')
++    expect(result.meta).toEqual({
++      cwd: process.cwd(),
++      execution: { schemaVersion: 1, subject: 'shell-command', kind: 'foreground', exitCode: 3, signal: null, timedOut: false, aborted: false },
++    })
+   })
+ 
+   it('reports timeout kills with both markers (timeout first)', async () => {
+@@ -302,6 +310,7 @@ describe('bash tool', () => {
+     const result = await call(ctx, 'bash', { command: 'sleep 60', description: 'test command', timeoutMs: 100 })
+     expect(result.isError).toBe(false)
+     expect(text(result)).toBe('(no output)\n[timed out after 100ms]\n[killed by signal: SIGTERM]')
++    expect(result.meta).toMatchObject({ execution: { exitCode: null, signal: 'SIGTERM', timedOut: true, aborted: false } })
+   })
+ 
+   it('reports a timeout even when the command traps the signal and exits 0', async () => {
+@@ -314,6 +323,62 @@ describe('bash tool', () => {
+     expect(result.isError).toBe(false)
+     expect(text(result)).toContain('[timed out after 100ms]')
+     expect(text(result)).not.toContain('[exit code:')
++    expect(result.meta).toMatchObject({ execution: { timedOut: true, aborted: false } })
++  })
++
++  it('persists a timed-out executor result even when it returned exit zero', async () => {
++    const ctx = await setup()
++    // A canned executor settlement isolates orthogonal flags from OS signal timing.
++    const outcome: ShellRunResult = {
++      exitCode: 0, signal: null, timedOut: true, aborted: false, timeoutMs: 100,
++      stdout: { text: 'OK\n', truncated: false }, stderr: { text: '', truncated: false },
++    }
++    vi.spyOn(ctx.shell, 'execute').mockResolvedValue(fakeExecution({
++      status: 'completed', exitCode: 0, signal: null, done: Promise.resolve(),
++      readOutput: () => ({ delta: '', lossy: false }),
++      observed: { stdout: silentReader, stderr: silentReader }, kill: () => false,
++    }, () => Promise.resolve(outcome)))
++    try {
++      const result = await call(ctx, 'bash', { command: 'fixture', description: 'Observe timeout settlement' })
++      expect(result.isError).toBe(false)
++      expect(result.meta).toEqual({
++        cwd: process.cwd(),
++        execution: { schemaVersion: 1, subject: 'shell-command', kind: 'foreground', exitCode: 0, signal: null, timedOut: true, aborted: false },
++      })
++      expect(text(result)).toBe('OK\n[timed out after 100ms]')
++    } finally {
++      await ctx.fiber.dispose()
++    }
++  })
++
++  it('records only the outer shell exit when a successful tail masks a failing pipeline member', async () => {
++    const ctx = await setup()
++    try {
++      const result = await call(ctx, 'bash', { command: "set +o pipefail; (printf 'inner failed\\n'; exit 7) | tail -1", description: 'Observe pipeline status' })
++      expect(result.isError).toBe(false)
++      expect(text(result)).toBe('inner failed\n')
++      expect(result.meta).toEqual({
++        cwd: process.cwd(),
++        execution: { schemaVersion: 1, subject: 'shell-command', kind: 'foreground', exitCode: 0, signal: null, timedOut: false, aborted: false },
++      })
++    } finally {
++      await ctx.fiber.dispose()
++    }
++  })
++
++  it('retains a signal termination without inventing a numeric exit', async () => {
++    const ctx = await setup()
++    try {
++      const result = await call(ctx, 'bash', { command: 'kill -TERM $$', description: 'Observe signal termination' })
++      expect(result.isError).toBe(false)
++      expect(text(result)).toBe('(no output)\n[killed by signal: SIGTERM]')
++      expect(result.meta).toEqual({
++        cwd: process.cwd(),
++        execution: { schemaVersion: 1, subject: 'shell-command', kind: 'foreground', exitCode: null, signal: 'SIGTERM', timedOut: false, aborted: false },
++      })
++    } finally {
++      await ctx.fiber.dispose()
++    }
+   })
+ 
+   it('reports truncation with the spill path', async () => {
+@@ -1524,7 +1589,12 @@ describe('resolved launch directory metadata', () => {
+       expect(result.isError).toBe(false)
+       if (result.isError) throw new Error('expected shell success')
+       expect(result.value).toMatchObject({ cwd: directory })
+-      expect(result.meta).toEqual({ cwd: directory })
++      expect(result.meta).toEqual({
++        cwd: directory,
++        execution: background
++          ? { schemaVersion: 1, subject: 'shell-command', kind: 'background', jobId: currentId(ctx, owner) }
++          : { schemaVersion: 1, subject: 'shell-command', kind: 'foreground', exitCode: 0, signal: null, timedOut: false, aborted: false },
++      })
+       expect(resolving).toHaveBeenCalledOnce()
+       expect(resolving).toHaveBeenCalledWith(expect.objectContaining({ workdir: workdir === undefined ? current : join(current, workdir) }))
+       expect(launch).toHaveBeenCalledWith(expect.objectContaining({ workdir: directory }))
+diff --git a/packages/subprocess/subprocess-local/README.i18n.yaml b/packages/subprocess/subprocess-local/README.i18n.yaml
+index 98a5c40de8..346c2c0f19 100644
+--- a/packages/subprocess/subprocess-local/README.i18n.yaml
++++ b/packages/subprocess/subprocess-local/README.i18n.yaml
+@@ -33,8 +33,8 @@
+   en: cc8e9b90f1d2e3de
+   zh: f85fdcd1c783bbfc
+ /deepseek-ai-dsh-subprocess-local/use-this-package/shutdown-behavior:
+-  en: cd0b8a5dc61335a5
+-  zh: ac5077a9ac277141
++  en: a54d9d2fb66b4d75
++  zh: cdc078348ebc2569
+ /deepseek-ai-dsh-subprocess-local/use-this-package/what-can-go-wrong:
+   en: 1e1ce532b004c92b
+   zh: ca7274b7a9207a5d
+diff --git a/packages/subprocess/subprocess-local/README.md b/packages/subprocess/subprocess-local/README.md
+index 05a6c3e41c..3f1bba7476 100644
+--- a/packages/subprocess/subprocess-local/README.md
++++ b/packages/subprocess/subprocess-local/README.md
+@@ -65,7 +65,7 @@ Opted-in root exit does not terminate surviving descendants. A confirmed empty L
+ 
+ Normal disposal terminates every running managed range and terminal session and awaits quiescence. During a JavaScript-observable host exit — direct `process.exit()`, default uncaught exceptions, default unhandled rejections — synchronous finalization asks a Linux scope to kill its members, kills each Windows runner so its sole Job handle closes, and uses the existing PGID, `taskkill`, or captured-identity operation for fallbacks. It creates no promises or timers and does not claim quiescence. The same exit removes the private per-process spill directory when it holds no completed spill file; completed spill files remain as full-output recovery artifacts until an external cleanup. Unhandled `SIGTERM`/`SIGINT`/`SIGHUP`, `SIGKILL`, fatal OOM, native crashes, and power loss need an external supervisor.
+ 
+-Linux ordinary and terminal cancellation preserves the observed termination signal even before the bootstrap consumes its launch request. An unconsumed request still reports startup failure when no matching termination was requested; a recorded pre-exec error always takes precedence. `waitForExit()` independently proves the scope empty, including a scope the manager leaves active with no processes after a payload dies before it enters that scope's cgroup. State queries interrupted by a termination signal are repeated before deciding whether cleanup succeeded. After termination, a consumed launch request and zero scope processes prove quiescence even before the direct-process exit notification. If the final scope signal fails, an accepted direct `SIGKILL` or verified direct-process absence permits one wait for the pending direct-process settlement before rechecking an active range not yet proven empty. This wait is independent of output draining and whole-range settlement. The fresh scope observation must prove the range empty; surviving processes or an unknown process count retain the signal failure.
++Linux ordinary and terminal cancellation preserves the observed termination signal even before the bootstrap consumes its launch request. An unconsumed request still reports startup failure when no matching termination was requested; a recorded pre-exec error always takes precedence. `waitForExit()` independently proves the scope empty, including a scope the manager leaves active with no processes after a payload dies before it enters that scope's cgroup. State queries overlapping a termination signal, launch-request consumption, or direct-process exit are repeated before deciding whether cleanup succeeded. A missing or inactive unit does not prove completion while its launcher can still consume the request and place payload. After termination, a consumed launch request and zero scope processes prove quiescence even before the direct-process exit notification. If the final scope signal fails, an accepted direct `SIGKILL` or verified direct-process absence permits one wait for the pending direct-process settlement before rechecking an active range not yet proven empty. This wait is independent of output draining and whole-range settlement. The fresh scope observation must prove the range empty; surviving processes or an unknown process count retain the signal failure.
+ 
+ ### What can go wrong
+ 
+diff --git a/packages/subprocess/subprocess-local/README.zh.md b/packages/subprocess/subprocess-local/README.zh.md
+index e8589765c0..7eba53a162 100644
+--- a/packages/subprocess/subprocess-local/README.zh.md
++++ b/packages/subprocess/subprocess-local/README.zh.md
+@@ -65,7 +65,7 @@ Windows 普通子进程通过 `windowsHide` 启动私有 Job runner，并为原
+ 
+ 正常 dispose 会终止每个仍在运行的受管范围与终端会话并等待其完全停稳。在 JavaScript 可观察的宿主退出期间——直接 `process.exit()`、默认未捕获异常、默认未处理 rejection——同步最终清理会请求 Linux scope 终止其成员，同步终止每个 Windows runner 以关闭其唯一 Job handle，并为 fallback 使用既有 PGID、`taskkill` 或已捕获身份操作。它不创建 Promise 或定时器，也不声称已经完全停稳。同一退出阶段会删除未持有任何已完成 spill 文件的每进程私有 spill 目录；已完成的 spill 文件作为完整输出恢复产物保留，直到外部机制清理。未处理的 `SIGTERM`/`SIGINT`/`SIGHUP`、`SIGKILL`、fatal OOM、native crash 与断电需要外部 supervisor。
+ 
+-Linux 普通进程和终端进程即使在 bootstrap 消费启动请求前被取消，也会保留实际观察到的终止信号。如果没有请求对应的终止信号，未消费的请求仍会报启动失败；已记录的 pre-exec 错误始终优先。`waitForExit()` 独立证明 scope 已为空，其中也包括 payload 在进入该 scope 的 cgroup 前就被杀死、manager 因此让它保持 active 却没有任何进程的 scope。状态查询期间若发出终止信号，会重新查询后再判定清理是否成功。请求终止后，启动请求已消费且 scope 进程数为零即可证明完全停稳，无需等待直接进程的退出通知。如果最终 scope 信号发送失败，直接进程接受 `SIGKILL` 或被独立确认已不存在，owner 才可以等待一次尚未送达的直接进程停稳通知，再重新查询尚未证明为空的 active 范围。此等待独立于输出排空和整个范围的停稳。新取得的 scope 状态必须证明范围已为空；仍有进程存活或进程数未知时，仍报告信号失败。
++Linux 普通进程和终端进程即使在 bootstrap 消费启动请求前被取消，也会保留实际观察到的终止信号。如果没有请求对应的终止信号，未消费的请求仍会报启动失败；已记录的 pre-exec 错误始终优先。`waitForExit()` 独立证明 scope 已为空，其中也包括 payload 在进入该 scope 的 cgroup 前就被杀死、manager 因此让它保持 active 却没有任何进程的 scope。状态查询期间若发出终止信号、启动请求被消费或直接进程退出，会重新查询后再判定清理是否成功。若启动器仍可能消费请求并放入 payload，unit 不存在或 inactive 都不能证明执行完成。请求终止后，启动请求已消费且 scope 进程数为零即可证明完全停稳，无需等待直接进程的退出通知。如果最终 scope 信号发送失败，直接进程接受 `SIGKILL` 或被独立确认已不存在，owner 才可以等待一次尚未送达的直接进程停稳通知，再重新查询尚未证明为空的 active 范围。此等待独立于输出排空和整个范围的停稳。新取得的 scope 状态必须证明范围已为空；仍有进程存活或进程数未知时，仍报告信号失败。
+ 
+ ### 可能出错的地方
+ 
+diff --git a/packages/subprocess/subprocess-local/src/linux-scope.ts b/packages/subprocess/subprocess-local/src/linux-scope.ts
+index 09cbc10224..a1199833c2 100644
+--- a/packages/subprocess/subprocess-local/src/linux-scope.ts
++++ b/packages/subprocess/subprocess-local/src/linux-scope.ts
+@@ -372,12 +372,8 @@ class SystemdScopeOwner implements BoundProcessOwner {
+     }
+   }
+ 
+-  private absentUnit(): boolean {
+-    this.observeRequestConsumption()
+-    if (this.establishment === 'established') return false
+-    if (!this.direct.running() && existsSync(this.startup.files.requestPath)) {
+-      return false
+-    }
++  private absentUnit(payloadConsumed: boolean, directRunning: boolean): boolean {
++    if (payloadConsumed || !directRunning) return false
+     if (this.killFailure !== undefined) throw this.killFailure
+     return true
+   }
+@@ -390,9 +386,9 @@ class SystemdScopeOwner implements BoundProcessOwner {
+    * payload; a consumed request proves the payload already entered the scope,
+    * even while its direct-process exit notification is pending.
+    */
+-  private emptyRange(tasksCurrent: number | undefined): boolean {
++  private emptyRange(tasksCurrent: number | undefined, payloadConsumed: boolean, directRunning: boolean): boolean {
+     return this.terminationRequested && tasksCurrent === 0
+-      && (!this.direct.running() || !existsSync(this.startup.files.requestPath))
++      && (!directRunning || payloadConsumed)
+   }
+ 
+   /** Release a leftover empty scope so the transient unit is collected and cannot accumulate. */
+@@ -445,6 +441,7 @@ class SystemdScopeOwner implements BoundProcessOwner {
+     this.observeRequestConsumption()
+     const generation = this.wakeGeneration
+     const directRunning = this.direct.running()
++    const payloadConsumed = !existsSync(this.startup.files.requestPath)
+     const result = await this.query(this.systemctl, [
+       '--user',
+       'show',
+@@ -453,23 +450,30 @@ class SystemdScopeOwner implements BoundProcessOwner {
+       '--property=ActiveState',
+       '--property=TasksCurrent',
+     ])
+-    // A signal invalidates state queried before its delivery and direct fallback.
+-    if (generation !== this.wakeGeneration) return true
++    // Do not combine a pre-launch/exit snapshot with newer execution facts.
++    // Both absence and TasksCurrent=0 require one consistent observation epoch.
++    this.observeRequestConsumption()
++    if (generation !== this.wakeGeneration
++      || (!payloadConsumed && !existsSync(this.startup.files.requestPath))
++      || (directRunning && !this.direct.running())) return true
+     const output = `${result.stdout}\n${result.stderr}`
+     if (result.status === 0) {
+       const { loadState, activeState, tasksCurrent } = this.parseUnitState(result.stdout)
+-      if (loadState === 'not-found' && activeState === 'inactive') return this.absentUnit()
++      if (loadState === 'not-found' && activeState === 'inactive') return this.absentUnit(payloadConsumed, directRunning)
+       if (loadState !== 'loaded') {
+         throw new Error(
+           `systemctl returned unknown state for ${this.unit}: ${JSON.stringify({ loadState, activeState })}`,
+         )
+       }
+       this.establishment = 'established'
+-      if (activeState === 'inactive' || activeState === 'failed') return false
++      if (activeState === 'inactive' || activeState === 'failed') {
++        // A launcher that has not consumed its request can still place payload.
++        return this.absentUnit(payloadConsumed, directRunning)
++      }
+       if (!['active', 'activating', 'reloading', 'deactivating'].includes(activeState)) {
+         throw new Error(`systemctl returned unknown ActiveState for ${this.unit}: ${JSON.stringify(activeState)}`)
+       }
+-      if (this.emptyRange(tasksCurrent)) {
++      if (this.emptyRange(tasksCurrent, payloadConsumed, directRunning)) {
+         this.releaseEmptyRange()
+         return false
+       }
+@@ -489,7 +493,7 @@ class SystemdScopeOwner implements BoundProcessOwner {
+       if (result.error !== undefined) throw result.error
+       throw new Error(`systemctl could not read ${this.unit}: ${output.trim() || `exit ${String(result.status)}`}`)
+     }
+-    return this.absentUnit()
++    return this.absentUnit(payloadConsumed, directRunning)
+   }
+ 
+   private wakeObservation(): void {
+diff --git a/packages/subprocess/subprocess-local/tests/linux-scope.spec.ts b/packages/subprocess/subprocess-local/tests/linux-scope.spec.ts
+index 1af050125b..429e275e7f 100644
+--- a/packages/subprocess/subprocess-local/tests/linux-scope.spec.ts
++++ b/packages/subprocess/subprocess-local/tests/linux-scope.spec.ts
+@@ -462,19 +462,29 @@ describe('Linux scope establishment and quiescence', () => {
+     result.owner.cleanup?.()
+   })
+ 
+-  it('uses manager-observed unit existence as establishment proof', async () => {
+-    const { child, result } = launch(async () => activeUnit('inactive'))
+-    await expect(result.owner.waitForExit()).resolves.toBeUndefined()
++  it.each(['inactive', 'failed'])('does not infer payload completion from a loaded %s unit before bootstrap consumption', async (state) => {
++    const sleeping = Promise.withResolvers<undefined>()
++    const resume = Promise.withResolvers<undefined>()
++    const { child, result } = launch(async () => activeUnit(state), {
++      sleep: async () => { sleeping.resolve(undefined); await resume.promise },
++    })
++    let settled = false
++    const waiting = result.owner.waitForExit().then(() => { settled = true })
++    await sleeping.promise
++    expect(settled).toBe(false)
+     child.exit(1, null)
++    resume.resolve(undefined)
++    await expect(waiting).resolves.toBeUndefined()
+     await expect(result.direct).rejects.toThrow('before its bootstrap consumed')
+     result.owner.cleanup?.()
+   })
+ 
+   it('keeps waiting while the unit is absent and the direct launcher is still running', async () => {
+     const states = [missingUnit(), activeUnit('inactive')]
+-    const { child, result } = launch(async () => states.shift() ?? activeUnit('inactive'))
++    const { child, result } = launch(async () => states.shift() ?? activeUnit('inactive'), {
++      sleep: async () => { child.exit(1, null) },
++    })
+     await expect(result.owner.waitForExit()).resolves.toBeUndefined()
+-    child.exit(1, null)
+     await expect(result.direct).rejects.toThrow('before its bootstrap consumed')
+     result.owner.cleanup?.()
+   })
+@@ -506,7 +516,10 @@ describe('Linux scope establishment and quiescence', () => {
+     ]
+     const launched = launch(
+       async () => states.shift() ?? activeUnit('inactive'),
+-      { sleep: async (delayMs) => { delays.push(delayMs) } },
++      { sleep: async (delayMs) => {
++        delays.push(delayMs)
++        if (delays.length === 1) consumeLinuxLaunchRequest(launched.requestPath)
++      } },
+     )
+ 
+     await expect(launched.result.owner.waitForExit()).resolves.toBeUndefined()
+@@ -884,6 +897,7 @@ describe('Linux scope establishment and quiescence', () => {
+       return new EventEmitter()
+     })
+     const stopped = launch(undefined)
++    consumeLinuxLaunchRequest(stopped.requestPath)
+     await expect(stopped.result.owner.waitForExit()).resolves.toBeUndefined()
+     stopped.result.owner.cleanup?.()
+ 
+@@ -951,6 +965,7 @@ describe('Linux scope establishment and quiescence', () => {
+     const states = [activeUnitWithTasks('0'), unloadedUnit()]
+     const launched = launch(async () => states.shift() ?? unloadedUnit(), {
+       spawnSync: spawnSync as never,
++      sleep: async () => { launched.child.exit(null, 'SIGTERM') },
+     })
+     launched.result.owner.signal('SIGTERM')
+     await expect(launched.result.owner.waitForExit()).resolves.toBeUndefined()
+@@ -961,6 +976,7 @@ describe('Linux scope establishment and quiescence', () => {
+   it('keeps waiting for an active empty scope no termination has requested', async () => {
+     const states = [activeUnitWithTasks('0'), unloadedUnit()]
+     const launched = launch(async () => states.shift() ?? unloadedUnit())
++    consumeLinuxLaunchRequest(launched.requestPath)
+     await expect(launched.result.owner.waitForExit()).resolves.toBeUndefined()
+     expect(launched.spawnSync).not.toHaveBeenCalled()
+     launched.result.owner.cleanup?.()
+@@ -969,6 +985,7 @@ describe('Linux scope establishment and quiescence', () => {
+   it('treats an unset process count as unknown and keeps waiting', async () => {
+     const states = [activeUnitWithTasks('[not set]'), unloadedUnit()]
+     const launched = launch(async () => states.shift() ?? unloadedUnit())
++    consumeLinuxLaunchRequest(launched.requestPath)
+     await expect(launched.result.owner.waitForExit()).resolves.toBeUndefined()
+     expect(launched.spawnSync).not.toHaveBeenCalled()
+     launched.result.owner.cleanup?.()
+@@ -1221,3 +1238,70 @@ it('observes native task counts independently from process-tree membership', ()
+     expect(() => owner.inspectTaskCount?.()).toThrow('non-numeric')
+   } finally { scope.cleanup() }
+ })
++
++
++describe('query epoch versus scope establishment', () => {
++  it.each([{ name:'missing',firstState:missingUnit,cancel:false },{ name:'unloaded',firstState:unloadedUnit,cancel:false },{ name:'cancelled zero tasks',firstState:()=>activeUnitWithTasks('0'),cancel:true }])('does not certify $name queried before request consumption', async ({ firstState,cancel }) => {
++    const absent = unloadedUnit
++    const first = Promise.withResolvers<ReturnType<typeof missingUnit>>()
++    const second = Promise.withResolvers<ReturnType<typeof missingUnit>>()
++    const query = vi.fn().mockImplementationOnce(() => first.promise).mockImplementation(() => second.promise)
++    const { result, requestPath, child } = launch(query, { sleep: async () => {} })
++    if(cancel)result.owner.signal('SIGTERM')
++    let settled = false
++    const waiting = result.owner.waitForExit().then(() => { settled = true })
++    try {
++      expect(query).toHaveBeenCalledOnce()
++      consumeLinuxLaunchRequest(requestPath)
++      first.resolve(firstState())
++      for (let n = 0; n < 10; n++) await Promise.resolve()
++      expect(settled, 'a pre-establishment query cannot prove post-establishment absence').toBe(false)
++      expect(query).toHaveBeenCalledTimes(2)
++      child.exit(0, null)
++      await result.direct
++      second.resolve(absent())
++      await waiting
++      expect(settled).toBe(true)
++    } finally {
++      first.resolve(firstState()); second.resolve(absent()); await waiting
++      result.owner.cleanup?.()
++    }
++  })
++})
++
++
++describe('query epoch versus direct exit', () => {
++  it('rejects stale zero after direct exit and waits through a fresh populated scope', async () => {
++    const first = Promise.withResolvers<ReturnType<typeof activeUnitWithTasks>>()
++    const populated = Promise.withResolvers<ReturnType<typeof activeUnitWithTasks>>()
++    const empty = Promise.withResolvers<ReturnType<typeof activeUnitWithTasks>>()
++    const query = vi.fn().mockImplementationOnce(() => first.promise)
++      .mockImplementationOnce(() => populated.promise).mockImplementation(() => empty.promise)
++    const { child, result, requestPath } = launch(query, { sleep: async () => {} })
++    consumeLinuxLaunchRequest(requestPath)
++    result.owner.signal('SIGTERM')
++    let settled = false
++    const waiting = result.owner.waitForExit().then(() => { settled = true })
++    try {
++      child.exit(null, 'SIGTERM')
++      await result.direct
++      first.resolve(activeUnitWithTasks('0'))
++      for (let n = 0; n < 10; n++) await Promise.resolve()
++      expect(settled).toBe(false)
++      expect(query).toHaveBeenCalledTimes(2)
++      populated.resolve(activeUnitWithTasks('1'))
++      for (let n = 0; n < 10; n++) await Promise.resolve()
++      expect(settled).toBe(false)
++      expect(query).toHaveBeenCalledTimes(3)
++      empty.resolve(activeUnitWithTasks('0'))
++      await waiting
++      expect(settled).toBe(true)
++    } finally {
++      first.resolve(activeUnitWithTasks('0'))
++      populated.resolve(activeUnitWithTasks('0'))
++      empty.resolve(activeUnitWithTasks('0'))
++      await waiting
++      result.owner.cleanup?.()
++    }
++  })
++})
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 3bb5b2fd3e..b8138bce3b 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -15063,6 +15063,12 @@ importers:
+       '@deepseek-ai/cordis':
+         specifier: workspace:~
+         version: link:../../../vendor/cordis
++      '@deepseek-ai/cordis-plugin-include':
++        specifier: workspace:~
++        version: link:../../../vendor/include
++      '@deepseek-ai/cordis-plugin-loader':
++        specifier: workspace:~
++        version: link:../../../vendor/loader
+       '@deepseek-ai/dsh-agent':
+         specifier: workspace:*
+         version: link:../../core/agent
+diff --git a/snapshots/session/bash-same-mode-empty-justification/session.v4.jsonl b/snapshots/session/bash-same-mode-empty-justification/session.v4.jsonl
+index 988e91a3da..608bd97cc6 100644
+--- a/snapshots/session/bash-same-mode-empty-justification/session.v4.jsonl
++++ b/snapshots/session/bash-same-mode-empty-justification/session.v4.jsonl
+@@ -16,7 +16,7 @@
+ {"type":"tool/call","data":{"turn":1,"step":1,"callId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233","name":"bash","arguments":"{\"command\": \"echo TERMINAL_OK\", \"description\": \"Echo TERMINAL_OK to verify terminal access\", \"sandbox_permissions\": \"danger-full-access\", \"justification\": \"\"}"}}
+ {"type":"job/registered","data":{"jobId":"{{id:1}}","owner":"{{session:1}}","kind":"bash","label":"echo TERMINAL_OK","startedAt":1791427795085,"toolCall":{"callId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233","rootCallId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233"}}}
+ {"type":"job/settled","data":{"jobId":"{{id:1}}","owner":"{{session:1}}","kind":"bash","label":"echo TERMINAL_OK","startedAt":1791427795085,"toolCall":{"callId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233","rootCallId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233"},"finishedAt":1791427795087,"status":"completed","cause":"producer","producerReported":true,"detail":"exit code: 0"}}
+-{"type":"tool/result","data":{"turn":1,"step":1,"message":{"role":"tool","source":{"kind":"tool","callId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233"},"toolCallId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233","content":[{"type":"text","text":"TERMINAL_OK\n"}],"isError":false,"id":"{{message:5}}"},"meta":{"cwd":"{{cwd}}"}},"sourceEventSeqs":[14],"surfaceOp":"append"}
++{"type":"tool/result","data":{"turn":1,"step":1,"message":{"role":"tool","source":{"kind":"tool","callId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233"},"toolCallId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233","content":[{"type":"text","text":"TERMINAL_OK\n"}],"isError":false,"id":"{{message:5}}"},"meta":{"cwd":"{{cwd}}","execution":{"schemaVersion":1,"subject":"shell-command","kind":"foreground","exitCode":0,"signal":null,"timedOut":false,"aborted":false}}},"sourceEventSeqs":[14],"surfaceOp":"append"}
+ {"type":"step/end","data":{"turn":1,"step":1}}
+ {"type":"step/start","data":{"turn":1,"step":2}}
+ {"type":"assistant/message","data":{"turn":1,"step":2,"message":{"role":"assistant","content":[{"type":"reasoning","text":"The command ran successfully and output \"TERMINAL_OK\". I should now reply with just \"DONE\"."},{"type":"text","text":"DONE"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"{{message:6}}"},"usage":{"inputTokens":168,"outputTokens":25,"cacheReadTokens":2816,"reasoningTokens":22},"stream":[{"type":"chunk","time":1791427795102,"chunk":{"type":"block-start","index":0,"blockType":"reasoning"}},{"type":"reasoning-chunks","time0":1791427795102,"index":0,"dt":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"texts":["The"," command"," ran"," successfully"," and"," output"," \"","TER","MIN","AL","_OK","\"."," I"," should"," now"," reply"," with"," just"," \"","D","ONE","\"."]},{"type":"chunk","time":1791427795102,"chunk":{"type":"block-start","index":1,"blockType":"text"}},{"type":"text-chunks","time0":1791427795103,"index":1,"dt":[0],"texts":["D","ONE"]},{"type":"chunk","time":1791427795103,"chunk":{"type":"block-end","index":0,"block":{"type":"reasoning","text":"The command ran successfully and output \"TERMINAL_OK\". I should now reply with just \"DONE\"."}}},{"type":"chunk","time":1791427795103,"chunk":{"type":"block-end","index":1,"block":{"type":"text","text":"DONE"}}},{"type":"chunk","time":1791427795103,"chunk":{"type":"usage","usage":{"inputTokens":168,"outputTokens":25,"cacheReadTokens":2816,"reasoningTokens":22}}},{"type":"chunk","time":1791427795103,"chunk":{"type":"finish","reason":{"kind":"stop"}}}]},"surfaceOp":"append"}
+diff --git a/snapshots/session/bash-spill/session.v4.jsonl b/snapshots/session/bash-spill/session.v4.jsonl
+index 0d682ea29a..ec2773cc4e 100644
+--- a/snapshots/session/bash-spill/session.v4.jsonl
++++ b/snapshots/session/bash-spill/session.v4.jsonl
+@@ -16,7 +16,7 @@
+ {"type":"tool/call","data":{"turn":1,"step":1,"callId":"call_spill","name":"bash","arguments":"{\"command\":\"node -e \\\"process.stdout.write('SPILL_START-' + 'x'.repeat(2000) + '-SPILL_END')\\\"\",\"description\":\"Print large deterministic output\"}"}}
+ {"type":"job/registered","data":{"jobId":"{{id:1}}","owner":"{{session:1}}","kind":"bash","label":"node -e \"process.stdout.write('SPILL_START-' + 'x'.repeat(2000) + '-SPILL_END')\"","startedAt":1791427795971,"toolCall":{"callId":"call_spill","rootCallId":"call_spill"}}}
+ {"type":"job/settled","data":{"jobId":"{{id:1}}","owner":"{{session:1}}","kind":"bash","label":"node -e \"process.stdout.write('SPILL_START-' + 'x'.repeat(2000) + '-SPILL_END')\"","startedAt":1791427795971,"toolCall":{"callId":"call_spill","rootCallId":"call_spill"},"finishedAt":1791427796001,"status":"completed","cause":"producer","producerReported":true,"detail":"exit code: 0"}}
+-{"type":"tool/result","data":{"turn":1,"step":1,"message":{"role":"tool","source":{"kind":"tool","callId":"call_spill"},"toolCallId":"call_spill","content":[{"type":"text","text":"SPILL_START-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[...]\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-SPILL_END\n\n(Omitted 1494 bytes. Full formatted result stored at: /tmp/dsh-acp-snap-ee77dff02/session-5e53dc8acfe4/2ce9d7a31a38-bash.txt. Use read with offset/limit, or grep this path to search within it.)"}],"isError":false,"id":"{{message:5}}"},"meta":{"cwd":"{{cwd}}"}},"sourceEventSeqs":[14],"surfaceOp":"append"}
++{"type":"tool/result","data":{"turn":1,"step":1,"message":{"role":"tool","source":{"kind":"tool","callId":"call_spill"},"toolCallId":"call_spill","content":[{"type":"text","text":"SPILL_START-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n[...]\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-SPILL_END\n\n(Omitted 1494 bytes. Full formatted result stored at: /tmp/dsh-acp-snap-ee77dff02/session-5e53dc8acfe4/2ce9d7a31a38-bash.txt. Use read with offset/limit, or grep this path to search within it.)"}],"isError":false,"id":"{{message:5}}"},"meta":{"cwd":"{{cwd}}","execution":{"schemaVersion":1,"subject":"shell-command","kind":"foreground","exitCode":0,"signal":null,"timedOut":false,"aborted":false}}},"sourceEventSeqs":[14],"surfaceOp":"append"}
+ {"type":"step/end","data":{"turn":1,"step":1}}
+ {"type":"step/start","data":{"turn":1,"step":2}}
+ {"type":"assistant/message","data":{"turn":1,"step":2,"message":{"role":"assistant","content":[{"type":"text","text":"DONE"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"{{message:6}}"},"usage":{"inputTokens":10,"outputTokens":2},"stream":[{"type":"chunk","time":1791427796018,"chunk":{"type":"block-start","index":0,"blockType":"text"}},{"type":"text-chunks","time0":1791427796018,"index":0,"dt":[],"texts":["DONE"]},{"type":"chunk","time":1791427796018,"chunk":{"type":"block-end","index":0,"block":{"type":"text","text":"DONE"}}},{"type":"chunk","time":1791427796018,"chunk":{"type":"usage","usage":{"inputTokens":10,"outputTokens":2}}},{"type":"chunk","time":1791427796018,"chunk":{"type":"finish","reason":{"kind":"stop"}}}]},"surfaceOp":"append"}
+diff --git a/snapshots/session/bash-startup-timeout/session.v4.jsonl b/snapshots/session/bash-startup-timeout/session.v4.jsonl
+index 84e380d3cb..e5a47b1286 100644
+--- a/snapshots/session/bash-startup-timeout/session.v4.jsonl
++++ b/snapshots/session/bash-startup-timeout/session.v4.jsonl
+@@ -15,7 +15,7 @@
+ {"type":"assistant/message","data":{"turn":1,"step":1,"message":{"role":"assistant","content":[{"type":"tool-call","id":"bash-startup-timeout","name":"bash","arguments":"{\"command\":\"sleep 30\",\"timeoutMs\":1,\"description\":\"Cancel a command during startup\"}"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"{{message:4}}"},"usage":{"inputTokens":1,"outputTokens":1},"stream":[{"type":"chunk","time":1791526663346,"chunk":{"type":"block-start","index":0,"blockType":"tool-call"}},{"type":"chunk","time":1791526663346,"chunk":{"type":"block-end","index":0,"block":{"type":"tool-call","id":"bash-startup-timeout","name":"bash","arguments":"{\"command\":\"sleep 30\",\"timeoutMs\":1,\"description\":\"Cancel a command during startup\"}"}}},{"type":"chunk","time":1791526663346,"chunk":{"type":"usage","usage":{"inputTokens":1,"outputTokens":1}}},{"type":"chunk","time":1791526663346,"chunk":{"type":"finish","reason":{"kind":"tool-calls"}}}]},"surfaceOp":"append"}
+ {"type":"tool/call","data":{"turn":1,"step":1,"callId":"bash-startup-timeout","name":"bash","arguments":"{\"command\":\"sleep 30\",\"timeoutMs\":1,\"description\":\"Cancel a command during startup\"}"}}
+ {"type":"job/registered","data":{"jobId":"{{id:1}}","owner":"{{session:1}}","kind":"bash","label":"sleep 30","startedAt":1791526663354,"toolCall":{"callId":"bash-startup-timeout","rootCallId":"bash-startup-timeout"}}}
+-{"type":"tool/result","data":{"turn":1,"step":1,"message":{"role":"tool","source":{"kind":"tool","callId":"bash-startup-timeout"},"toolCallId":"bash-startup-timeout","content":[{"type":"text","text":"[still running after 1ms; moved to background job {{id:1}}]"}],"isError":false,"id":"{{message:5}}"},"meta":{"cwd":"{{cwd}}"}},"sourceEventSeqs":[14],"surfaceOp":"append"}
++{"type":"tool/result","data":{"turn":1,"step":1,"message":{"role":"tool","source":{"kind":"tool","callId":"bash-startup-timeout"},"toolCallId":"bash-startup-timeout","content":[{"type":"text","text":"[still running after 1ms; moved to background job {{id:1}}]"}],"isError":false,"id":"{{message:5}}"},"meta":{"cwd":"{{cwd}}","execution":{"schemaVersion":1,"subject":"shell-command","kind":"promoted","jobId":"{{id:1}}"}}},"sourceEventSeqs":[14],"surfaceOp":"append"}
+ {"type":"step/end","data":{"turn":1,"step":1}}
+ {"type":"step/start","data":{"turn":1,"step":2}}
+ {"type":"assistant/message","data":{"turn":1,"step":2,"message":{"role":"assistant","content":[{"type":"text","text":"DONE"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"{{message:6}}"},"usage":{"inputTokens":1,"outputTokens":1},"stream":[{"type":"chunk","time":1791526663368,"chunk":{"type":"block-start","index":0,"blockType":"text"}},{"type":"chunk","time":1791526663368,"chunk":{"type":"block-end","index":0,"block":{"type":"text","text":"DONE"}}},{"type":"chunk","time":1791526663368,"chunk":{"type":"usage","usage":{"inputTokens":1,"outputTokens":1}}},{"type":"chunk","time":1791526663368,"chunk":{"type":"finish","reason":{"kind":"stop"}}}]},"surfaceOp":"append"}
+diff --git a/snapshots/session/bash-tool-turn/session.v4.jsonl b/snapshots/session/bash-tool-turn/session.v4.jsonl
+index d7e23def59..701439efb2 100644
+--- a/snapshots/session/bash-tool-turn/session.v4.jsonl
++++ b/snapshots/session/bash-tool-turn/session.v4.jsonl
+@@ -16,7 +16,7 @@
+ {"type":"tool/call","data":{"turn":1,"step":1,"callId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233","name":"bash","arguments":"{\"command\": \"echo TERMINAL_OK\", \"description\": \"Echo TERMINAL_OK to verify terminal access\", \"justification\": \" \\t\\n \"}"}}
+ {"type":"job/registered","data":{"jobId":"{{id:1}}","owner":"{{session:1}}","kind":"bash","label":"echo TERMINAL_OK","startedAt":1791427797866,"toolCall":{"callId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233","rootCallId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233"}}}
+ {"type":"job/settled","data":{"jobId":"{{id:1}}","owner":"{{session:1}}","kind":"bash","label":"echo TERMINAL_OK","startedAt":1791427797866,"toolCall":{"callId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233","rootCallId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233"},"finishedAt":1791427797868,"status":"completed","cause":"producer","producerReported":true,"detail":"exit code: 0"}}
+-{"type":"tool/result","data":{"turn":1,"step":1,"message":{"role":"tool","source":{"kind":"tool","callId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233"},"toolCallId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233","content":[{"type":"text","text":"TERMINAL_OK\n"}],"isError":false,"id":"{{message:5}}"},"meta":{"cwd":"{{cwd}}"}},"sourceEventSeqs":[14],"surfaceOp":"append"}
++{"type":"tool/result","data":{"turn":1,"step":1,"message":{"role":"tool","source":{"kind":"tool","callId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233"},"toolCallId":"call_00_fkbBRJsUrGKd1pWVc4Gn8233","content":[{"type":"text","text":"TERMINAL_OK\n"}],"isError":false,"id":"{{message:5}}"},"meta":{"cwd":"{{cwd}}","execution":{"schemaVersion":1,"subject":"shell-command","kind":"foreground","exitCode":0,"signal":null,"timedOut":false,"aborted":false}}},"sourceEventSeqs":[14],"surfaceOp":"append"}
+ {"type":"step/end","data":{"turn":1,"step":1}}
+ {"type":"step/start","data":{"turn":1,"step":2}}
+ {"type":"assistant/message","data":{"turn":1,"step":2,"message":{"role":"assistant","content":[{"type":"reasoning","text":"The command ran successfully and output \"TERMINAL_OK\". I should now reply with just \"DONE\"."},{"type":"text","text":"DONE"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"{{message:6}}"},"usage":{"inputTokens":168,"outputTokens":25,"cacheReadTokens":2816,"reasoningTokens":22},"stream":[{"type":"chunk","time":1791427797881,"chunk":{"type":"block-start","index":0,"blockType":"reasoning"}},{"type":"reasoning-chunks","time0":1791427797882,"index":0,"dt":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"texts":["The"," command"," ran"," successfully"," and"," output"," \"","TER","MIN","AL","_OK","\"."," I"," should"," now"," reply"," with"," just"," \"","D","ONE","\"."]},{"type":"chunk","time":1791427797882,"chunk":{"type":"block-start","index":1,"blockType":"text"}},{"type":"text-chunks","time0":1791427797882,"index":1,"dt":[0],"texts":["D","ONE"]},{"type":"chunk","time":1791427797882,"chunk":{"type":"block-end","index":0,"block":{"type":"reasoning","text":"The command ran successfully and output \"TERMINAL_OK\". I should now reply with just \"DONE\"."}}},{"type":"chunk","time":1791427797882,"chunk":{"type":"block-end","index":1,"block":{"type":"text","text":"DONE"}}},{"type":"chunk","time":1791427797882,"chunk":{"type":"usage","usage":{"inputTokens":168,"outputTokens":25,"cacheReadTokens":2816,"reasoningTokens":22}}},{"type":"chunk","time":1791427797882,"chunk":{"type":"finish","reason":{"kind":"stop"}}}]},"surfaceOp":"append"}
+diff --git a/snapshots/session/text-turn/tool-schemas.expected.json b/snapshots/session/text-turn/tool-schemas.expected.json
+index 1949c7d605..23fe6fa50a 100644
+--- a/snapshots/session/text-turn/tool-schemas.expected.json
++++ b/snapshots/session/text-turn/tool-schemas.expected.json
+@@ -22,6 +22,14 @@
+             "type": "string",
+             "description": "Working directory for this command. Defaults to the session workspace; a relative path is resolved against it."
+           },
++          "completion_scope": {
++            "type": "string",
++            "description": "Default command waits for the direct command only. managed-range requires a capable executor and job registry, and waits for the provider-managed range to become empty; timeout may return a job handle.",
++            "enum": [
++              "command",
++              "managed-range"
++            ]
++          },
+           "run_in_background": {
+             "type": "boolean",
+             "description": "Run in the background and return a job id immediately (collect with job_output, stop with job_kill). No timeout applies."
+diff --git a/snapshots/session/text-turn/writer.expected.jsonl b/snapshots/session/text-turn/writer.expected.jsonl
+index baab2ac720..3efb6c738e 100644
+--- a/snapshots/session/text-turn/writer.expected.jsonl
++++ b/snapshots/session/text-turn/writer.expected.jsonl
+@@ -12,6 +12,6 @@
+ {"type":"request/header","data":{"header":{"config":{"provider":"deepseek-official","model":"deepseek-v4-flash"},"tools":"{{tools}}"},"reason":"initial"}}
+ {"type":"request/context","data":{"provider":"deepseek-official","model":"deepseek-v4-flash"}}
+ {"type":"session/title","data":{"title":"Reply with exactly the word:","messageSeqs":[8],"source":{"kind":"fallback"}}}
+-{"type":"assistant/message","data":{"turn":1,"step":1,"message":{"role":"assistant","content":[{"type":"reasoning","text":"The user wants me to reply with exactly the word \"PONG\" and not use any tools."},{"type":"text","text":"PONG"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"{{message:4}}"},"usage":{"inputTokens":3091,"outputTokens":23,"cacheReadTokens":0,"reasoningTokens":20},"stream":[{"type":"chunk","time":1791444976519,"chunk":{"type":"block-start","index":0,"blockType":"reasoning"}},{"type":"reasoning-chunks","time0":1791444976519,"index":0,"dt":[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"texts":["The"," user"," wants"," me"," to"," reply"," with"," exactly"," the"," word"," \"","P","ONG","\""," and"," not"," use"," any"," tools","."]},{"type":"chunk","time":1791444976520,"chunk":{"type":"block-start","index":1,"blockType":"text"}},{"type":"text-chunks","time0":1791444976520,"index":1,"dt":[0],"texts":["P","ONG"]},{"type":"chunk","time":1791444976520,"chunk":{"type":"block-end","index":0,"block":{"type":"reasoning","text":"The user wants me to reply with exactly the word \"PONG\" and not use any tools."}}},{"type":"chunk","time":1791444976520,"chunk":{"type":"block-end","index":1,"block":{"type":"text","text":"PONG"}}},{"type":"chunk","time":1791444976520,"chunk":{"type":"usage","usage":{"inputTokens":3091,"outputTokens":23,"cacheReadTokens":0,"reasoningTokens":20}}},{"type":"chunk","time":1791444976520,"chunk":{"type":"finish","reason":{"kind":"stop"}}}]},"surfaceOp":"append"}
++{"type":"assistant/message","data":{"turn":1,"step":1,"message":{"role":"assistant","content":[{"type":"reasoning","text":"The user wants me to reply with exactly the word \"PONG\" and not use any tools."},{"type":"text","text":"PONG"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"{{message:4}}"},"usage":{"inputTokens":3091,"outputTokens":23,"cacheReadTokens":0,"reasoningTokens":20},"stream":[{"type":"chunk","time":1793376068235,"chunk":{"type":"block-start","index":0,"blockType":"reasoning"}},{"type":"reasoning-chunks","time0":1793376068235,"index":0,"dt":[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"texts":["The"," user"," wants"," me"," to"," reply"," with"," exactly"," the"," word"," \"","P","ONG","\""," and"," not"," use"," any"," tools","."]},{"type":"chunk","time":1793376068236,"chunk":{"type":"block-start","index":1,"blockType":"text"}},{"type":"text-chunks","time0":1793376068236,"index":1,"dt":[0],"texts":["P","ONG"]},{"type":"chunk","time":1793376068236,"chunk":{"type":"block-end","index":0,"block":{"type":"reasoning","text":"The user wants me to reply with exactly the word \"PONG\" and not use any tools."}}},{"type":"chunk","time":1793376068236,"chunk":{"type":"block-end","index":1,"block":{"type":"text","text":"PONG"}}},{"type":"chunk","time":1793376068236,"chunk":{"type":"usage","usage":{"inputTokens":3091,"outputTokens":23,"cacheReadTokens":0,"reasoningTokens":20}}},{"type":"chunk","time":1793376068236,"chunk":{"type":"finish","reason":{"kind":"stop"}}}]},"surfaceOp":"append"}
+ {"type":"step/end","data":{"turn":1,"step":1}}
+ {"type":"turn/end","data":{"turn":1,"reason":{"kind":"completed"}}}
+diff --git a/snapshots/session/tool-call-turn/session.v4.jsonl b/snapshots/session/tool-call-turn/session.v4.jsonl
+index 11aa5bc6f0..bb8b6f619f 100644
+--- a/snapshots/session/tool-call-turn/session.v4.jsonl
++++ b/snapshots/session/tool-call-turn/session.v4.jsonl
+@@ -16,7 +16,7 @@
+ {"type":"tool/call","data":{"turn":1,"step":1,"callId":"call_00_Rn2Mz1y8uZN62ukEXiNO2077","name":"bash","arguments":"{\"command\": \"echo SNAPSHOT_OK\", \"description\": \"Run echo SNAPSHOT_OK\"}"}}
+ {"type":"job/registered","data":{"jobId":"{{id:1}}","owner":"{{session:1}}","kind":"bash","label":"echo SNAPSHOT_OK","startedAt":1791427900990,"toolCall":{"callId":"call_00_Rn2Mz1y8uZN62ukEXiNO2077","rootCallId":"call_00_Rn2Mz1y8uZN62ukEXiNO2077"}}}
+ {"type":"job/settled","data":{"jobId":"{{id:1}}","owner":"{{session:1}}","kind":"bash","label":"echo SNAPSHOT_OK","startedAt":1791427900990,"toolCall":{"callId":"call_00_Rn2Mz1y8uZN62ukEXiNO2077","rootCallId":"call_00_Rn2Mz1y8uZN62ukEXiNO2077"},"finishedAt":1791427900991,"status":"completed","cause":"producer","producerReported":true,"detail":"exit code: 0"}}
+-{"type":"tool/result","data":{"turn":1,"step":1,"message":{"role":"tool","source":{"kind":"tool","callId":"call_00_Rn2Mz1y8uZN62ukEXiNO2077"},"toolCallId":"call_00_Rn2Mz1y8uZN62ukEXiNO2077","content":[{"type":"text","text":"SNAPSHOT_OK\n"}],"isError":false,"id":"{{message:5}}"},"meta":{"cwd":"{{cwd}}"}},"sourceEventSeqs":[14],"surfaceOp":"append"}
++{"type":"tool/result","data":{"turn":1,"step":1,"message":{"role":"tool","source":{"kind":"tool","callId":"call_00_Rn2Mz1y8uZN62ukEXiNO2077"},"toolCallId":"call_00_Rn2Mz1y8uZN62ukEXiNO2077","content":[{"type":"text","text":"SNAPSHOT_OK\n"}],"isError":false,"id":"{{message:5}}"},"meta":{"cwd":"{{cwd}}","execution":{"schemaVersion":1,"subject":"shell-command","kind":"foreground","exitCode":0,"signal":null,"timedOut":false,"aborted":false}}},"sourceEventSeqs":[14],"surfaceOp":"append"}
+ {"type":"step/end","data":{"turn":1,"step":1}}
+ {"type":"step/start","data":{"turn":1,"step":2}}
+ {"type":"assistant/message","data":{"turn":1,"step":2,"message":{"role":"assistant","content":[{"type":"reasoning","text":"The command executed successfully and printed SNAPSHOT_OK. Now I need to reply with the single word DONE."},{"type":"text","text":"DONE"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"{{message:6}}"},"usage":{"inputTokens":170,"outputTokens":28,"cacheReadTokens":2816,"reasoningTokens":25},"stream":[{"type":"chunk","time":1791427901005,"chunk":{"type":"block-start","index":0,"blockType":"reasoning"}},{"type":"reasoning-chunks","time0":1791427901005,"index":0,"dt":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"texts":["The"," command"," executed"," successfully"," and"," printed"," S","NA","PS","H","OT","_OK","."," Now"," I"," need"," to"," reply"," with"," the"," single"," word"," D","ONE","."]},{"type":"chunk","time":1791427901005,"chunk":{"type":"block-start","index":1,"blockType":"text"}},{"type":"text-chunks","time0":1791427901005,"index":1,"dt":[0],"texts":["D","ONE"]},{"type":"chunk","time":1791427901005,"chunk":{"type":"block-end","index":0,"block":{"type":"reasoning","text":"The command executed successfully and printed SNAPSHOT_OK. Now I need to reply with the single word DONE."}}},{"type":"chunk","time":1791427901005,"chunk":{"type":"block-end","index":1,"block":{"type":"text","text":"DONE"}}},{"type":"chunk","time":1791427901005,"chunk":{"type":"usage","usage":{"inputTokens":170,"outputTokens":28,"cacheReadTokens":2816,"reasoningTokens":25}}},{"type":"chunk","time":1791427901005,"chunk":{"type":"finish","reason":{"kind":"stop"}}}]},"surfaceOp":"append"}
+diff --git a/packages/shell/tool-bash/tests/managed-range.spec.ts b/packages/shell/tool-bash/tests/managed-range.spec.ts
+new file mode 100644
+index 0000000000..f987c5d5b5
+--- /dev/null
++++ b/packages/shell/tool-bash/tests/managed-range.spec.ts
+@@ -0,0 +1,83 @@
++import { expect, it, vi } from 'vitest'
++import type { ShellProcess, ShellManagedRange } from '@deepseek-ai/dsh-shell'
++import { managedProcessJob, processOutcome } from '../src/background.ts'
++function handle(range?: ShellManagedRange) {
++  return { status:'completed',exitCode:0,signal:null,done:Promise.resolve(),...range === undefined ? {} : { managedRange: range },
++    readOutput:()=>({ delta:'',lossy:false }),kill:vi.fn(()=>false),
++    observed:{ stdout:{ readFrom:()=>({ text:'',nextOffset:0,lossy:false }) },stderr:{ readFrom:()=>({ text:'',nextOffset:0,lossy:false }) } } } satisfies ShellProcess
++}
++function deferredRange(){
++  const empty=Promise.withResolvers<boolean>()
++  const terminate=vi.fn()
++  const range:ShellManagedRange={ terminate,waitForExit:signal=>new Promise((resolve,reject)=>{
++    if(signal?.aborted){resolve(false);return}
++    const abort=()=>{ resolve(false) }
++    signal?.addEventListener('abort',abort,{ once:true })
++    void empty.promise.then(resolve,reject).finally(()=>signal?.removeEventListener('abort',abort))
++  }) }
++  return{ range,empty,terminate }
++}
++it('range job stays live after direct exit and preserves nonzero exit after drain',async()=>{
++  const d=deferredRange(),p=handle(d.range);p.exitCode=7
++  const hooks=managedProcessJob(async()=>p,processOutcome,200)
++  let finished=false;void hooks.done.then(()=>{finished=true});await Promise.resolve();await Promise.resolve()
++  expect(finished).toBe(false);d.empty.resolve(true)
++  expect(await hooks.done).toEqual({ status:'completed',detail:'exit code: 7' })
++  hooks.cancel('too late');expect(d.terminate).not.toHaveBeenCalled()
++})
++it.each(['published','preparation'] as const)('cancellation during %s terminates descendants even after leader exit',async (timing)=>{
++  const d=deferredRange(),p=handle(d.range),prepared=Promise.withResolvers<ShellProcess>()
++  const hooks=managedProcessJob(()=>prepared.promise,processOutcome,200)
++  if(timing==='published'){prepared.resolve(p);await Promise.resolve()}
++  hooks.cancel('stop');prepared.resolve(p);await Promise.resolve();await Promise.resolve()
++  expect(d.terminate).toHaveBeenCalled();expect(p.kill).not.toHaveBeenCalled()
++  d.empty.resolve(true);expect((await hooks.done).status).toBe('killed');expect(p.exitCode).toBe(0)
++})
++it('cleanup budget expires as failed without waiting indefinitely for direct command',async()=>{
++  const d=deferredRange(),p={ ...handle(d.range),done:new Promise<void>(()=>{}) }
++  const hooks=managedProcessJob(async()=>p,processOutcome,20)
++  await Promise.resolve();hooks.cancel('stop')
++  expect(await hooks.done).toMatchObject({ status:'failed',detail:'managed range drain not confirmed within cleanup budget' })
++  d.empty.resolve(true)
++})
++it('observation rejection cannot become success even if cleanup later succeeds',async()=>{
++  const terminate=vi.fn(),wait=vi.fn().mockRejectedValueOnce(Error('observation unavailable')).mockResolvedValue(true)
++  const hooks=managedProcessJob(async()=>handle({ terminate,waitForExit:wait }),processOutcome,200)
++  expect(await hooks.done).toEqual({ status:'failed',detail:'observation unavailable' });expect(terminate).toHaveBeenCalledOnce()
++})
++it('missing handle fails and requests available direct cleanup',async()=>{
++  const p=handle();const hooks=managedProcessJob(async()=>p,processOutcome,200)
++  expect((await hooks.done).status).toBe('failed');expect(p.kill).toHaveBeenCalledOnce()
++})
++it('unexpected false observation remains failed',async()=>{
++  const terminate=vi.fn();const hooks=managedProcessJob(async()=>handle({ terminate,waitForExit:async()=>false }),processOutcome,200)
++  expect((await hooks.done).status).toBe('failed');expect(terminate).toHaveBeenCalled()
++})
++it('late preparation beyond cleanup deadline cannot certify a live range',async()=>{
++  const d=deferredRange(),prepared=Promise.withResolvers<ShellProcess>()
++  const hooks=managedProcessJob(()=>prepared.promise,processOutcome,10);hooks.cancel('stop before publication')
++  await new Promise(r=>setTimeout(r,20));prepared.resolve(handle(d.range))
++  expect((await hooks.done).status).toBe('failed');expect(d.terminate).toHaveBeenCalled();d.empty.resolve(true)
++})
++
++import { renderResult } from '../src/render.ts'
++import { parseExitStatus } from '@deepseek-ai/dsh-shell'
++it.each([{ exitCode:7,signal:null },{ exitCode:null,signal:'SIGTERM' as const }])('range marker retains terminal exit presentation for %j',(exit)=>{
++  const text=renderResult({ ...exit,timedOut:false,aborted:false,timeoutMs:200,stdout:{ text:'diagnostic',truncated:false },stderr:{ text:'',truncated:false },managedRange:'drained' })
++  expect(text).toContain('[managed range: drained]')
++  expect(parseExitStatus(text)).toMatchObject(exit.signal===null?{ exitCode:7 }:{ signal:'SIGTERM' })
++})
++
++it('bounds cancellation after the range drains but direct settlement remains pending', async () => {
++  const rangeObserved = Promise.withResolvers<undefined>()
++  const terminate = vi.fn()
++  const process = {
++    ...handle({ terminate, waitForExit: async () => { rangeObserved.resolve(undefined); return true } }),
++    done: new Promise<void>(() => {}),
++  }
++  const hooks = managedProcessJob(async () => process, processOutcome, 20)
++  await rangeObserved.promise
++  hooks.cancel('stop while awaiting direct settlement')
++  expect(await hooks.done).toEqual({ status: 'failed', detail: 'direct command settlement not confirmed within cleanup budget' })
++  expect(terminate).toHaveBeenCalled()
++})

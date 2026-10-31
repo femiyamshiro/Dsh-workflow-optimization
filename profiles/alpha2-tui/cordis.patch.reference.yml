@@ -1,0 +1,74 @@
+# Reference template: adapt against target profile; do not overwrite a live profile.
+# Other credential-bound providers, connection/auth overrides and UI defaults omitted.
+- id: llm-pi-ai
+  config:
+    providers:
+      femiya-local:
+        displayName: 本机主模型
+        api: openai-completions
+        baseURL: http://127.0.0.1:8094/v1
+        apiKeyEnv: FEMIYA_LOCAL_MODEL_API_KEY
+        reasoning: off
+        timeoutMs: 10800000
+        streamIdleTimeoutMs: 900000
+        retryPolicy:
+          mode: normal
+          maxRetries: 0
+        compat:
+          supportsStore: false
+          supportsDeveloperRole: false
+          supportsStrictMode: false
+          maxTokensField: max_tokens
+          thinkingFormat: chat-template
+          chatTemplateKwargs:
+            enable_thinking:
+              $var: thinking.enabled
+        models:
+        - id: flash-next-iq3-xxs
+          name: IQ3_XXS · 常驻主模型
+          contextWindow: 196608
+          maxTokens: 57344
+          input:
+          - text
+          - image
+          reasoningEfforts:
+            off: off
+            low: low
+            medium: medium
+            xhigh: xhigh
+          compat:
+            chatTemplateKwargs:
+              enable_thinking:
+                $var: thinking.enabled
+              reasoning_effort:
+                $var: thinking.effort
+                omitWhenOff: true
+        - id: agents-a1-q8_0
+          name: Agents-A1 Q8_0 · 手动切换
+          contextWindow: 196608
+          maxTokens: 57344
+          input:
+          - text
+          - image
+          reasoningEfforts:
+            off: off
+            high: high
+- id: agent-default-model
+  config:
+    provider: femiya-local
+    model: flash-next-iq3-xxs
+- id: dsh-ops-tui
+  disabled: false
+- {"insert": [{"id": "principles-budget-standard", "name": "@deepseek-harness-tui/dsh-tui/preset-patch",
+      "config": {"preset": "standard", "config": {"agent-instructions": {"maxBytes": 131072}}}},
+    {"id": "principles-budget-cordis", "name": "@deepseek-harness-tui/dsh-tui/preset-patch",
+      "config": {"preset": "cordis", "config": {"agent-instructions": {"maxBytes": 131072}}}},
+    {"id": "principles-budget-ptc", "name": "@deepseek-harness-tui/dsh-tui/preset-patch",
+      "config": {"preset": "ptc", "config": {"agent-instructions": {"maxBytes": 131072}}}}]}
+- id: dsh-tui
+  config:
+    backend: dsh
+    provider: femiya-local
+    model: flash-next-iq3-xxs
+    effort: xhigh
+    launchpad: false

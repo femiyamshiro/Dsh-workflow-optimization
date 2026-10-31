@@ -1,0 +1,24 @@
+{
+  "name": "dsh-workbench-tui-baseline",
+  "private": true,
+  "dependencies": {
+    "@deepseek-ai/dsh-base": "0.2.1-rc.3",
+    "dsh-ops": "0.4.1",
+    "@kira905/dsh-task-board-local": "file:../../vendor/taskboard",
+    "@kira905/dsh-session-toolkit": "file:../../vendor/session-toolkit",
+    "@deepseek-harness-tui/dsh-tui": "0.17.0",
+    "@deepseek-ai/dsh-session-persistence-jsonl": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-web-app": "0.2.1-rc.3"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "@deepseek-harness-tui/dsh-tui",
+        "dsh-ops",
+        "@kira905/dsh-task-board-local"
+      ]
+    }
+  }
+}

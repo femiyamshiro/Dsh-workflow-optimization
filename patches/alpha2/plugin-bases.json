@@ -1,0 +1,15 @@
+{
+  "patch_scope": "paths relative to plugins parent; git apply -p1",
+  "versions_before": {
+    "@deepseek-harness-tui/dsh-tui": "0.17.0",
+    "@nanmicoder/dsh-agent-teams": "0.1.23+rc3.dual.1",
+    "dsh-context": "0.76.0",
+    "dsh-working-activity": "0.5.1"
+  },
+  "optional_provider_plugins": [
+    "dsh-our-free-model",
+    "dsh-plugin-chatgpt"
+  ],
+  "ops": "old 0.4.1 patch excluded; see ops-0.4.4.package.reference.json; no engines edit proves Desktop compatibility",
+  "team_preimage": "First apply nanmi-rc3-preimage.patch to authentic npm 0.1.23; then the matching stanza in plugins-compat.patch."
+}

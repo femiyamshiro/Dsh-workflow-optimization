@@ -1,0 +1,488 @@
+{
+  "date": "2026-10-31",
+  "core_base": "f3803c96974ad4a94195fb97e5c637e9c2a3afe3",
+  "files": [
+    {
+      "path": "patches/alpha2/ops-0.4.4.package.reference.json",
+      "source_sha256": "2320b5385bdbd603ceefa50fcf9c1baf577e8f2a1b989d63b78c9de3b853beeb",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/CHANGELOG.md",
+      "source_sha256": "ebfb4a799535f951d7996e35c1974d086a75055202edb113a21e782ac18ad135",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/LICENSE",
+      "source_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/NOTICE",
+      "source_sha256": "f81cdc7b13e3ae2faf543256b27aa0970e78888188205c10b60d1169f8d99c76",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/README.en.md",
+      "source_sha256": "033e16e60469ef32467e6433c4f3ea9aed4118f188e4fa3420b212b6b558a7b7",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/README.md",
+      "source_sha256": "4d467181525f1c1bb90e80a28800d1b1e36a42574837a5ad41c841dc484ce113",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/cordis.patch.yml",
+      "source_sha256": "87492ac9179a1693432ad66bad54ee408b3a0289a280ebe92a29021f04a8e35d",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/lib/client.js",
+      "source_sha256": "2053757d035ceda56060f6d58f0655dc24a34a0c0ca1ba4a0964d837df4f0058",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/lib/host-adapter.d.ts",
+      "source_sha256": "1fe9a83e120735861679be2c4285b0258dc8decc4e75b70199995ec6eeb4630c",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/lib/host-adapter.js",
+      "source_sha256": "b761a39cb3df4db5d40bde0ccd5a9bb578cc59fa861860cd3f0e2fd132269adb",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/lib/index.js",
+      "source_sha256": "8b4f81addc9ef8751936e343fa7ad10918e3fbe576d2666c91cf5b31441c384a",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/lib/invariant.js",
+      "source_sha256": "fdc4702e20b0ecb6c7e0fbec48f61a1c1394924cc2be1c0c519e3ad282e19704",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/lib/local-workflow.js",
+      "source_sha256": "831a0cc4036f63a20b1bf089eddb33848c1fe87fdd38ee83fbf9f1e8ea4d3c86",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/package.json",
+      "source_sha256": "6ac1f15a95da04255391cce16a127a707bb9a0935a609ad6d446ca54056566b8",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/PluginSettingsCard.tsx",
+      "source_sha256": "3ce31f3b9d4fe03241afd74bda821a77421991bcf4ef5bd081afd0fa25ba518f",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/TaskBoardSettingsCard.tsx",
+      "source_sha256": "c5538360e775672528f57654001455de972f3d6c181017487edd9685db7fa96e",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/apply-guard.ts",
+      "source_sha256": "15d76231c71c7f0f592b7d614bfb1b37fde9f6cf837870f3c42695cd59f8491f",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/board/ConfirmDialog.tsx",
+      "source_sha256": "cc4fa93301b3eebc4f7100dd4d835e43184d8f7b0f970763c486eea296fb1de5",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/board/EditTaskModal.tsx",
+      "source_sha256": "98f97377ca34ea3486aac4eced3d2444bbfc376f74a0701fddd713d184279a68",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/board/NewTaskModal.tsx",
+      "source_sha256": "5fd93db40861e489e3fb96a917d50e5b778120c13b001cff87c7de95141801ec",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/board/TaskBoard.tsx",
+      "source_sha256": "efa6c25b85e25e4ef2ace4d97308592cac94020354f65d5279b8c6a88853bddf",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/board/TaskCard.tsx",
+      "source_sha256": "8a278600fc28f0059d6a45c0a76ea34a0d6d31165e22a868e73db5194e5ff248",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/board/TaskDetail.tsx",
+      "source_sha256": "d30b1f4bd01465da75b4900a5830dbf6957689c45932d33b33628b6debee1761",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/board/status-key.ts",
+      "source_sha256": "9376a53cdb25101b9a6aa0e3c6de4c70375e0ae72b01b50d85cc3c0863eb87ef",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/board-mount.tsx",
+      "source_sha256": "94717b88a102d6687676b6f7ccf6ac289678e9f394dc408013eb3a59ec164ed7",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/board.module.css",
+      "source_sha256": "957908eeed5a09bb341bc271d1ecd8d1b0d99313df107c4bce21cfdde87b65e5",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/client-faces.ts",
+      "source_sha256": "085576aeb54836d5dfdce429ac03d69290ade51981cf10282dc1f263e2045a7e",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/css-modules.d.ts",
+      "source_sha256": "82aaefe7a0c38be6a217d5aae9346fd5bf1dd4233c0fc098281c89ada917f27d",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/host-api.ts",
+      "source_sha256": "b005685e559d3cbae93ab635d6415695c0dab290d765fadb5a33be140bf04da8",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/index.ts",
+      "source_sha256": "724cfdbeec3fe2cb6abcaa113ca94157bd86320948e20c18b84db5542e7b34a8",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/locales.ts",
+      "source_sha256": "320f6fb9a456b3026c256b1cba11d30d57021fa41a49de1d384fe86c844ab34b",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/preset-roster.ts",
+      "source_sha256": "af3a80958a54aad5487921bc4748b34309a56e4cab4409a5bff8c937d1677ffb",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/schedule-presets.ts",
+      "source_sha256": "f239adc50f5ae72974b7bb3e31a38054d09fef06d6f1fcb5e24f88eaf38f7093",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/settings-card.module.css",
+      "source_sha256": "95d3fc7954c29dd7d5475aac244d0389c60354392b73530028fc421b2b992bba",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/settings-form.ts",
+      "source_sha256": "b4e782f4b8a7d5338569e159213414d3485d9bd46ec82355b152d305c43a24ce",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/sidebar-entry-core.ts",
+      "source_sha256": "253f8071b0afece3f2292e1b29bc344a8b3ea789fa73e326d0fb74ee5455403f",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/sidebar-entry.ts",
+      "source_sha256": "43f3158b0151d3df21f4a1ab3a03510ba4e1c89f57a9e426acbb03e26f441a77",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/client/telemetry.ts",
+      "source_sha256": "192f355b29d269fd424085965ee99a49af232e46bb08b8283289b60485345ddd",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/core/controller.ts",
+      "source_sha256": "411f9d421799a31a439a6dca3444c2597ef8efb01778b89845a08d2469d7cbfd",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/core/schedule.ts",
+      "source_sha256": "b72e9a942e93ca775679681aea9c513939cf2130734b71f1ce1036329c384895",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/core/store.ts",
+      "source_sha256": "437c368e19805abfac23495d5887020c98ab4cac01203ccbea78bf3e2a2dccba",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/core/tasks.ts",
+      "source_sha256": "e71d8dfe300032861aaf8a9670b5065c37ca0ef496c899afcd97a589aee4d624",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/core/use-cases/task-archive.ts",
+      "source_sha256": "62fae777697d2ced1fd42415bb88f2ef52c864cd048858920f5c6235c855afcf",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/core/use-cases/task-create.ts",
+      "source_sha256": "419aaf9cc8db1097a5f741657716f095419306551a42334d384bc0bf9b78f5c0",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/core/use-cases/task-delete.ts",
+      "source_sha256": "cf2c0b0b1a069cb0fa018d19e7f7d755fd526ba161c2a9ee0a3da430d29114a8",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/core/use-cases/task-schedule.ts",
+      "source_sha256": "ac72caed408d2041aa8c8b3a5efeba022450e20d56940ab3bad75a618fa17262",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/core/use-cases/task-update.ts",
+      "source_sha256": "bdd0d58e2dc7419a2d0e5617d5c73d479e2020ab11cc0608af3a780863da0dcc",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/dsh-home.ts",
+      "source_sha256": "8940010875e64cdcfab6002ac595d3b703698ac95678f4b2cb845566ff16fbaf",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/host-ledger.ts",
+      "source_sha256": "3e5ccfa94445729ea28f3fe29a208fa6c75a0b3227ef76145f992ee686559d81",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/host-routes.ts",
+      "source_sha256": "8bdf75de6ba7cdad364ca437f90f2b6d930408a68cf0469ee2952db9f682e475",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/host-runner.ts",
+      "source_sha256": "060b37de05a6eb5980c242928d02c5a82d166d76d52c6f2d21f4235f72ee59a1",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/host-service.ts",
+      "source_sha256": "9170778b5930c88989e2c2e19d7f4840f3738ceac94c79d6aab462cb0348c83d",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/http.ts",
+      "source_sha256": "9041a546f3cc067549d6d9231c6ed48d735a57b930a4fa086588c8280a5a5304",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/index.ts",
+      "source_sha256": "1db334687f17517376742230589240d380c555ccbbb219131095faf265b5cadc",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/invariant.ts",
+      "source_sha256": "aff238c8452bf2c2ec18524411399981e596fb4ec5ce10bc7a5bbc5530f39595",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/loopback.ts",
+      "source_sha256": "b5e1b5e660e6c3a463a31df70644b4db5cf9cf8b4fb073453f620791ddb86828",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/mount-once.ts",
+      "source_sha256": "b6fd8bd7c74bf3a5c0b3f243cb09094fae87fe546798c8e2c6c92ee1bff1e2cd",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/power-inhibitor.ts",
+      "source_sha256": "33728c42c328fa0ee86a29893c7aafc0d33735c51cbda380e85985234e67f522",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/protocol.ts",
+      "source_sha256": "8b953990632373a880572e33fee455f9bb135ba501ccf0aecfbd6a2c18e40ee9",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/taskboard/src/settings-compat.ts",
+      "source_sha256": "cdbcaee06fcffb44cacce12430e3bbfbd12759816f0d6b8673984163ffc78f82",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/CHANGELOG.md",
+      "source_sha256": "a420419e67f7402666a8cc78b23ac412d56788ee4ddc576ffabd62afb3bcf005",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/LICENSE",
+      "source_sha256": "372af8d55aa1d4da55226c4f83dc472708b04f0609c79f465f0bb4b11c726a45",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/README.en.md",
+      "source_sha256": "1d131673c80a36dcfbcf39de3e63c8c6925a69e62cd93b3f07734d9746abb395",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/README.md",
+      "source_sha256": "8c5ce068ce2d63258d5a128ffae4c8b08e6a1a658600e07f9d3f82f2e74774a1",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/package.json",
+      "source_sha256": "1837e27ff381b065d6e6b1519e8141098d6abbb6b75b6dbf911d7e7c5042c7ef",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/src/archive-inactive-sessions.mjs",
+      "source_sha256": "5281e7bfe132fd13ad671b0ba21dd1bd28244721ea3284a597a83d50fabdb2a4",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/src/context-check.mjs",
+      "source_sha256": "a3c2d972baed01227bc7091cc13b6060c33375e7c301d517942784c2e75d43c7",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/src/dsh-sessions-land.mjs",
+      "source_sha256": "ea1cfbd67a991bc8cbf2d8cd593e96032c0880a47c0ec644230b7e3f52466035",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/src/lib/archive-meta-store.mjs",
+      "source_sha256": "250ebffc2fbd21ba4f2cca5aefc3b865ea4a872afb025979a8d5b696ad789e1f",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/src/lib/dsh-home.mjs",
+      "source_sha256": "df7b804088454968dcfedbc61316dcb263db7d4c2b33b426baf1575ec282f88b",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/src/lib/dsh-rpc-client.mjs",
+      "source_sha256": "b4bf00c4efc7b4af2133a8f4d3ed397078631b00ea5831f2016fc22ae79a3f0c",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/src/lib/projcache-read.mjs",
+      "source_sha256": "4c63790787b02e5ca55cf21ddadc3933276788bfaef3a902cd57336656f98493",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/src/lib/session-file-name.mjs",
+      "source_sha256": "9a3364b294176e070b45270daad90a6d24eddad58b7abc133f9c5e0a6b56968d",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/src/lib/sessions-land-skip.mjs",
+      "source_sha256": "fb61dfa89147dc52c1c2a47ec57e6bc1e40ca6e50a3d252f424c4efafabf3f83",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/src/lib/zstd-frames.mjs",
+      "source_sha256": "fdbf40b4de94bc5b99a7b62c01690a84fc7c4fb212081219f1fdbe57013582e8",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/src/relay-facts.mjs",
+      "source_sha256": "41741353db62b52075b00969de1af3c768ea691713498ece0a02f96e35015abd",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/src/session-axis-set.mjs",
+      "source_sha256": "61e88804513a7cc23e1549f23ec773fa857e7c10df3854a6404c67b1f2ad5812",
+      "transform": "unchanged"
+    },
+    {
+      "path": "vendor/session-toolkit/src/session-tail-for-llm.mjs",
+      "source_sha256": "88bc502d88f17283f4032a4de98858ee066ef819e764d9006eaf14c0cc3d9c72",
+      "transform": "unchanged"
+    },
+    {
+      "path": "profiles/rc3-tui/cordis.patch.reference.yml",
+      "source_sha256": "b0bdcddc2c4ec982f86871e3186dabc54b3138e9a5230d5bb6a40b9ecdcba3b3",
+      "transform": "retain YAML tags; only local provider; remove source-host auth/UI entries; align reference model default"
+    },
+    {
+      "path": "profiles/alpha2-web/cordis.patch.reference.yml",
+      "source_sha256": "a2f778902fbcf423ce8f39902beb9448fa43351e676820ca10f1bd00db22538a",
+      "transform": "retain YAML tags; only local provider; remove source-host auth/UI entries; align reference model default"
+    },
+    {
+      "path": "profiles/alpha2-tui/cordis.patch.reference.yml",
+      "source_sha256": "062c25bbea68a196cc0b674ac3ae0e7b4f70208fa976f46761383a5b2a4c9b3d",
+      "transform": "retain YAML tags; only local provider; remove source-host auth/UI entries; align reference model default"
+    },
+    {
+      "path": "profiles/rc3-tui/package.reference.json",
+      "source_sha256": "21f10b3aed3afcdda767f4397cdf11dbea0cd179effad69e5505f4295e525cb2",
+      "transform": "relative vendor path or explicit target placeholder; not a ready Desktop manifest"
+    },
+    {
+      "path": "profiles/alpha2-web/package.reference.json",
+      "source_sha256": "24e85485aa2b6c06a039c590413fa7113f6cb891a636896f0845ab278dfb90c0",
+      "transform": "relative vendor path or explicit target placeholder; not a ready Desktop manifest"
+    },
+    {
+      "path": "profiles/alpha2-tui/package.reference.json",
+      "source_sha256": "bb46b42182a5ea07dbd5b33cc0b3a4dc1c76a369f9dd4d74164a4892fcbf1d5d",
+      "transform": "relative vendor path or explicit target placeholder; not a ready Desktop manifest"
+    },
+    {
+      "path": "principles/v9.0.en.reference.md",
+      "source_sha256": "cd726ff30401dd24ed586cd24aca530528d8ff9ef13f8f0b1b453c7db88d3d86",
+      "transform": "unchanged"
+    },
+    {
+      "path": "licenses/deepseek-harness-MIT.txt",
+      "source_sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
+      "transform": "unchanged"
+    },
+    {
+      "path": "licenses/deepseek-harness-tui__dsh-tui-LICENSE.txt",
+      "source_sha256": "54f2c59427af6a22111dade86a39605a17826a7d44e98801c42e3ab21889f884",
+      "transform": "unchanged"
+    },
+    {
+      "path": "licenses/nanmicoder__dsh-agent-teams-LICENSE.txt",
+      "source_sha256": "e4e722cd6f8bb374affe13b571a262e0e03d68407da555abf1b046eb7889d4ea",
+      "transform": "unchanged"
+    },
+    {
+      "path": "licenses/dsh-context-LICENSE.txt",
+      "source_sha256": "919857728c4e1d0f76be03af00437d9910c943f883d04c8c58a6a0cb1c3225b0",
+      "transform": "unchanged"
+    },
+    {
+      "path": "licenses/dsh-working-activity-LICENSE.txt",
+      "source_sha256": "217c7cfec9bdbb1059bd97da3c100fb00fc5dfbed2f983a9223e76f3fe984765",
+      "transform": "unchanged"
+    },
+    {
+      "path": "licenses/dsh-ops-0.4.4-alpha2-LICENSE.txt",
+      "source_sha256": "5b6633db7dfb5f2eee5c8ea51e8a9e44b242a1051c3e2f2fd04c6992f754cbd4",
+      "transform": "unchanged"
+    },
+    {
+      "path": "licenses/dsh-ops-0.4.4-alpha2-NOTICE.txt",
+      "source_sha256": "b7dc96cf102b461d885554762d5341e46fa95e728ceecd394f83c36ebb785760",
+      "transform": "unchanged"
+    },
+    {
+      "path": "licenses/dsh-our-free-model-LICENSE.txt",
+      "source_sha256": "4d5f97c83545b2159926df06d3210a266d2b7f900e27f7b3e8e576caf753e828",
+      "transform": "unchanged"
+    },
+    {
+      "path": "licenses/dsh-plugin-chatgpt-LICENSE.txt",
+      "source_sha256": "3f16f45cf58c60234bf9f33cca41128331ec4feaef7b11db13e2e77c7ea3f5d3",
+      "transform": "unchanged"
+    },
+    {
+      "path": "docs/DSH-TUI-操作手册.md",
+      "source_sha256": "486ddfc887ce4d0be6597f27e7b5b3b222b161c6cfee4efff4dd1265ebedfdc3",
+      "transform": "host path labels only; original evidence not rerun; public edition replaces remaining user-home path prefix"
+    },
+    {
+      "path": "docs/DSH-TUI-速查壁纸.svg",
+      "source_sha256": "962f251efe2c10473b493071ebebd855f852fcc2f59c8f12781c62197784f2af",
+      "transform": "unchanged"
+    }
+  ],
+  "edition": "public-sanitized",
+  "private_source_archive_preserved": true
+}

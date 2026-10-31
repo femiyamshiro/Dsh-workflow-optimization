@@ -1,0 +1,266 @@
+--- before/nanmicoder__dsh-agent-teams/package.json
++++ after/nanmicoder__dsh-agent-teams/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@nanmicoder/dsh-agent-teams",
+-  "version": "0.1.23+rc3.dual.1",
++  "version": "0.1.23+alpha2.lab.1",
+   "description": "AgentTeams for DeepSeek Harness: multi-agent team collaboration (captain, members, tasks with dependencies, messaging) driven by natural language, with a tree monitor in the web GUI",
+   "type": "module",
+   "main": "lib/index.js",
+@@ -51,7 +51,8 @@
+     "llm"
+   ],
+   "engines": {
+-    "node": "^22.19.0 || >=24"
++    "node": "^22.19.0 || >=24",
++    "dsh": "0.2.2-alpha.2"
+   },
+   "publishConfig": {
+     "access": "public",
+--- before/deepseek-harness-tui__dsh-tui/package.json
++++ after/deepseek-harness-tui__dsh-tui/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@deepseek-harness-tui/dsh-tui",
+-  "version": "0.17.0",
++  "version": "0.17.0+alpha2.lab.1",
+   "description": "Interactive terminal interface for DeepSeek Harness agents, sessions and tools.",
+   "keywords": [
+     "dsh",
+@@ -129,7 +129,8 @@
+     "guide"
+   ],
+   "engines": {
+-    "node": "^22.19 || >=24"
++    "node": "^22.19 || >=24",
++    "dsh": "0.2.2-alpha.2"
+   },
+   "scripts": {
+     "clean": "node scripts/clean-lib.mjs",
+--- before/deepseek-harness-tui__dsh-tui/lib/types/dsh-adapter/channel/model-selection.js
++++ after/deepseek-harness-tui__dsh-tui/lib/types/dsh-adapter/channel/model-selection.js
+@@ -1,14 +1,10 @@
+-import { boundContextSummary, createUserMessage } from '@deepseek-ai/dsh-llm';
+ import { createChannelOwner } from './owner.js';
+-/** Routing belongs to the live agent, including turns running while parked.
+- * The foreground facade follows the binding; each waterfall captures its own
+- * agent's ref so a later binding can never supply its route. */
++/** Alpha.2 records route changes through Agent.model before step preparation. */
+ export function createModelSelection(ctx, deps) {
+     const entries = new Map();
+     const foreground = () => {
+         const entry = entries.get(deps.agent());
+-        if (entry === undefined)
+-            throw new Error('dsh-tui: model selection has not been bound');
++        if (entry === undefined) throw new Error('dsh-tui: model selection has not been bound');
+         return entry.ref;
+     };
+     const selection = {
+@@ -20,90 +16,34 @@
+     deps.owner.own(ctx.on('agent/disposed', ({ agent }) => entries.get(agent)?.release()));
+     const bind = (agent, route) => {
+         deps.owner.assertActive();
+-        if (entries.has(agent))
+-            return;
+-        const recorded = agent.session.requestHeader?.()?.config;
+-        const hasCreatedRoute = agent.options?.provider !== undefined && agent.options.model !== undefined;
+-        // Seeded children can deliberately replace the inherited header's route.
+-        // Restore a recorded pin only when the caller actually adopted that route.
+-        const usesRecordedRoute = recorded?.provider === route.provider && recorded?.model === route.model;
++        if (entries.has(agent)) return;
++        const fallback = route.provider && route.model ? { ...route } : undefined;
+         const ref = {
+-            current: usesRecordedRoute && recorded?.reasoningEffort !== undefined
+-                ? { ...route, reasoningEffort: recorded.reasoningEffort }
+-                : route.provider !== '' && route.model !== '' &&
+-                    (!hasCreatedRoute || (usesRecordedRoute &&
+-                        (route.provider !== agent.options.provider || route.model !== agent.options.model)))
+-                    ? { ...route } : undefined,
++            get current() { return agent.model.current(); },
++            set current(value) {
++                const selected = value ?? fallback;
++                if (selected !== undefined) agent.model.select(selected);
++            },
+             assembled: undefined,
+         };
++        if (agent.model.current() === undefined && fallback !== undefined) agent.model.select(fallback);
+         const lifetime = createChannelOwner();
+         lifetime.bind(deps.owner.current);
++        const current = lifetime.current;
+         let assemblyOperation = 0;
+-        const current = lifetime.current;
+-        const release = deps.owner.own(() => {
+-            entries.delete(agent);
+-            lifetime.dispose();
+-        });
++        const release = deps.owner.own(() => { entries.delete(agent); lifetime.dispose(); });
+         entries.set(agent, { ref, release });
+-        const own = (dispose) => {
+-            lifetime.own(dispose);
++        try {
++            lifetime.own(agent.ctx.on('system-prompt/assemble', async (_assembly, _context, next) => {
++                const operation = ++assemblyOperation;
++                const selected = agent.model.current();
++                const assembled = await next();
++                if (current() && operation === assemblyOperation) ref.assembled = selected;
++                return assembled;
++            }));
+             lifetime.assertActive();
+-        };
+-        try {
+-            own(agent.ctx.on('system-prompt/assemble', async (_assembly, _context, next) => {
+-                const operation = ++assemblyOperation;
+-                const selected = ref.current;
+-                const assembled = await next();
+-                if (!current())
+-                    return assembled;
+-                // A slow context-panel inspection must not replace a newer turn's route.
+-                if (operation === assemblyOperation)
+-                    ref.assembled = selected;
+-                if (selected === undefined)
+-                    return assembled;
+-                return { ...assembled, variables: { ...assembled.variables, provider: selected.provider, model: selected.model } };
+-            }));
+-            own(agent.ctx.on('agent/request', async (_payload, next) => {
+-                const resolved = await next();
+-                if (!current())
+-                    return resolved;
+-                const selected = ref.assembled;
+-                if (selected === undefined)
+-                    return resolved;
+-                const { reasoningEffort: _inheritedEffort, ...withoutInheritedEffort } = resolved;
+-                return {
+-                    ...withoutInheritedEffort,
+-                    provider: selected.provider,
+-                    model: selected.model,
+-                    ...(selected.reasoningEffort === undefined ? {} : { reasoningEffort: selected.reasoningEffort }),
+-                };
+-            }));
+-            // Match upstream installModelSelection's admission-time provenance.
+-            own(agent.ctx.on('agent/pre-step', async ({ agent: subject, messages, signal, step }, next) => {
+-                const decision = await next();
+-                if (!current() || decision.kind === 'reject' || signal.aborted)
+-                    return decision;
+-                if (decision.messages.length === 0 && (step === 1 || messages.length > 0))
+-                    return decision;
+-                const selected = ref.assembled;
+-                const previous = subject.session.requestHeader()?.config;
+-                if (selected === undefined || previous === undefined ||
+-                    (selected.provider === previous.provider && selected.model === previous.model))
+-                    return decision;
+-                const from = selected.provider === previous.provider ? previous.model : `${previous.provider}/${previous.model}`;
+-                const to = selected.provider === previous.provider ? selected.model : `${selected.provider}/${selected.model}`;
+-                return { ...decision, messages: [...decision.messages, createUserMessage({
+-                            content: [{ type: 'text', text: `[model changed: assistant turns above this point were generated by ${from}; the session continues with ${to}]` }],
+-                            // Older source unions lack this kind; the runtime shape is unchanged.
+-                            source: { kind: 'model-selection', form: 'notice', summary: boundContextSummary(`${from} → ${to}`) },
+-                        })] };
+-            }, { prepend: true }));
+-        }
+-        catch (error) {
+-            try {
+-                release();
+-            }
+-            catch { /* preserve the registration failure */ }
++        } catch (error) {
++            try { release(); } catch { /* preserve the registration failure */ }
+             throw error;
+         }
+     };
+--- before/deepseek-harness-tui__dsh-tui/lib/types/utils/paths.js
++++ after/deepseek-harness-tui__dsh-tui/lib/types/utils/paths.js
+@@ -16,7 +16,7 @@
+     return homedir() || process.env.USERPROFILE || process.env.HOME || '';
+ }
+ /** Data directory all preferences/history live in (`~/.dsh-tui`). */
+-export const DATA_DIR = join(homeDir(), '.dsh-tui');
++export const DATA_DIR = process.env.DSH_TUI_DATA_DIR || join(homeDir(), '.dsh-tui');
+ /**
+  * Where one backend keeps its own files: `<dataRoot>/backends/<id>`, keyed by
+  * the backend's declared id (the `x-dsh-tui` Backend entry's `spec.id` field).
+--- before/dsh-context/package.json
++++ after/dsh-context/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "dsh-context",
+-  "version": "0.76.0",
++  "version": "0.76.0+alpha2.lab.1",
+   "description": "A DeepSeek Harness plugin for context insight and management, with context dashboard and context command, for understanding how the context is made of, and how it evolves.",
+   "icon": "icon.svg",
+   "author": "bowenliang123",
+@@ -15,7 +15,7 @@
+   "type": "module",
+   "engines": {
+     "node": "^22.19.0 || >=24.0.0",
+-    "dsh": ">=0.2.0-rc.2 || >=0.2.1-rc.2"
++    "dsh": "0.2.2-alpha.2"
+   },
+   "main": "lib/index.js",
+   "types": "lib/index.d.ts",
+--- before/dsh-our-free-model/package.json
++++ after/dsh-our-free-model/package.json
+@@ -1,9 +1,9 @@
+ {
+   "name": "dsh-our-free-model",
+-  "version": "2.1.0",
++  "version": "2.1.0+alpha2.lab.1",
+   "private": true,
+   "type": "module",
+-  "description": "Our Free Model — 在 dsh 里装上这个插件即可，无需登录、注册或填 API Key，就能使用包括 DeepSeek V4.1 Flash、Kimi K3 在内的前沿模型，桌面端另有 EAC 协付渠道；2.0 起接入 CodeArts、CodeBuddy、WorkBuddy、LobsterAI、Qoder、TRAE、Cline、Loomy、Raccoon、MiniMax、ZCode、Gemini 十三个账号渠道（原有匿名免费通道保留）（登录、账号池、积分领取、本地 OpenAI 网关与局域网转发、数据看板与运行日志），六页毛玻璃界面统一呈现。",
++  "description": "Our Free Model \u2014 \u5728 dsh \u91cc\u88c5\u4e0a\u8fd9\u4e2a\u63d2\u4ef6\u5373\u53ef\uff0c\u65e0\u9700\u767b\u5f55\u3001\u6ce8\u518c\u6216\u586b API Key\uff0c\u5c31\u80fd\u4f7f\u7528\u5305\u62ec DeepSeek V4.1 Flash\u3001Kimi K3 \u5728\u5185\u7684\u524d\u6cbf\u6a21\u578b\uff0c\u684c\u9762\u7aef\u53e6\u6709 EAC \u534f\u4ed8\u6e20\u9053\uff1b2.0 \u8d77\u63a5\u5165 CodeArts\u3001CodeBuddy\u3001WorkBuddy\u3001LobsterAI\u3001Qoder\u3001TRAE\u3001Cline\u3001Loomy\u3001Raccoon\u3001MiniMax\u3001ZCode\u3001Gemini \u5341\u4e09\u4e2a\u8d26\u53f7\u6e20\u9053\uff08\u539f\u6709\u533f\u540d\u514d\u8d39\u901a\u9053\u4fdd\u7559\uff09\uff08\u767b\u5f55\u3001\u8d26\u53f7\u6c60\u3001\u79ef\u5206\u9886\u53d6\u3001\u672c\u5730 OpenAI \u7f51\u5173\u4e0e\u5c40\u57df\u7f51\u8f6c\u53d1\u3001\u6570\u636e\u770b\u677f\u4e0e\u8fd0\u884c\u65e5\u5fd7\uff09\uff0c\u516d\u9875\u6bdb\u73bb\u7483\u754c\u9762\u7edf\u4e00\u5448\u73b0\u3002",
+   "main": "./index.js",
+   "exports": {
+     ".": "./index.js",
+@@ -51,7 +51,8 @@
+     "llm-provider"
+   ],
+   "engines": {
+-    "node": "^22.19.0 || >=24.0.0"
++    "node": "^22.19.0 || >=24.0.0",
++    "dsh": "0.2.2-alpha.2"
+   },
+   "dsh": {
+     "bundle": {
+--- before/dsh-plugin-chatgpt/package.json
++++ after/dsh-plugin-chatgpt/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "dsh-plugin-chatgpt",
+-  "version": "0.1.13",
++  "version": "0.1.13+alpha2.lab.1",
+   "description": "Sign in with ChatGPT inside DeepSeek Harness, and use your ChatGPT subscription to serve models.",
+   "keywords": [
+     "dsh-plugin",
+@@ -49,7 +49,8 @@
+     "docs/cache-replay.md"
+   ],
+   "engines": {
+-    "node": "^22.19.0 || >=24.0.0"
++    "node": "^22.19.0 || >=24.0.0",
++    "dsh": "0.2.2-alpha.2"
+   },
+   "publishConfig": {
+     "access": "public"
+--- before/dsh-working-activity/package.json
++++ after/dsh-working-activity/package.json
+@@ -1,7 +1,7 @@
+ {
+   "name": "dsh-working-activity",
+-  "description": "Live model working-status line: playful copy, running tool, turn elapsed 鈥?for TUI prompt and Web UI",
+-  "version": "0.5.1",
++  "description": "Live model working-status line: playful copy, running tool, turn elapsed \u9225?for TUI prompt and Web UI",
++  "version": "0.5.1+alpha2.lab.1",
+   "type": "module",
+   "main": "lib/types/index.js",
+   "types": "lib/types/index.d.ts",
+@@ -44,7 +44,8 @@
+     "cordis.patch.yml"
+   ],
+   "engines": {
+-    "node": "^22.19 || >=24"
++    "node": "^22.19 || >=24",
++    "dsh": "0.2.2-alpha.2"
+   },
+   "scripts": {
+     "build": "tsc -p tsconfig.json && tsc -p tsconfig.client.json",

@@ -1,0 +1,23 @@
+{
+  "name": "dsh-profile-dsh-tui",
+  "private": true,
+  "dependencies": {
+    "@deepseek-ai/dsh-experimental-agent-team-profile": "link:${TARGET_PLUGIN_OR_SOURCE_ROOT}/agent-team-profile",
+    "@deepseek-harness-tui/dsh-tui": "link:${TARGET_PLUGIN_OR_SOURCE_ROOT}/deepseek-harness-tui__dsh-tui",
+    "@nanmicoder/dsh-agent-teams": "link:${TARGET_PLUGIN_OR_SOURCE_ROOT}/nanmicoder__dsh-agent-teams",
+    "dsh-context": "link:${TARGET_PLUGIN_OR_SOURCE_ROOT}/dsh-context",
+    "dsh-ops": "link:${TARGET_PLUGIN_OR_SOURCE_ROOT}/dsh-ops-0.4.4-alpha2"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-harness-tui/dsh-tui",
+        "dsh-ops",
+        "dsh-context",
+        "@deepseek-ai/dsh-experimental-agent-team-profile",
+        "@nanmicoder/dsh-agent-teams"
+      ]
+    }
+  }
+}

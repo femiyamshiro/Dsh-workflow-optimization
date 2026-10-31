@@ -1,0 +1,41 @@
+{
+  "package": "@nanmicoder/dsh-agent-teams",
+  "upstream_version": "0.1.23",
+  "registry_tarball_integrity": "sha512-DDH1eFDEomfIDXAQF0DFBZuN37JkVo8PEgCNvQ088xCJ5qt8sSi7sgxD+sLwOOw6aC7GHsyAOmNTWvH3ftAfiw==",
+  "tarball_sha256": "53d40ce9d0db307496b751d506c27799ade52c315b9a0313707849a896bb66e9",
+  "intermediate_version": "0.1.23+rc3.dual.1",
+  "final_version": "0.1.23+alpha2.lab.1",
+  "changed_files": [
+    "README.md",
+    "README_ZH.md",
+    "compatibility.json",
+    "lib/alpha4-member-setup.js",
+    "lib/capabilities.js",
+    "lib/client.js",
+    "lib/command.js",
+    "lib/git-artifact-stamp.json",
+    "lib/index.js",
+    "lib/members.js",
+    "lib/official-team-coexistence.js",
+    "lib/scheduler.js",
+    "lib/state.js",
+    "lib/tools.js",
+    "lib/types/alpha4-member-setup.d.ts",
+    "lib/types/members.d.ts",
+    "lib/types/types.d.ts",
+    "package.json"
+  ],
+  "forward_chain_checked_on_authentic_npm_package": true,
+  "final_runtime_files_match_alpha_copy": false,
+  "debug_sourcemaps_excluded": true,
+  "private_patch_sha256": "30da44a437887d6d3ffdaad38a1ea02e5873fbb8fe4341b3a82fc6f82dbcfb9c",
+  "public_patch_sha256": "809d1a2231c88dc67a6a8ec2ec3f42d11bb07196860f58f7f9f46de1b6d59104",
+  "public_redactions": {
+    "compatibility.json": "replace only absolute receipt path prefix with ${SERVER_USER_HOME}",
+    "lib/client.js": "replace only three build-machine //#region path comments; CSS and executable code unchanged"
+  },
+  "note": "Public redaction chain is separately checked; private migration proof is historical.",
+  "final_files_match_declared_sanitized_alpha_copy": true,
+  "compared_runtime_files": 101,
+  "executable_code_and_css_unchanged": true
+}

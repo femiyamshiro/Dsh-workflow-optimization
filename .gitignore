@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*credentials*
+sessions/
+logs/
+task-board/
+policy-memory/
+*.sqlite*
+.DS_Store
+local/

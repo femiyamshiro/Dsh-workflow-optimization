@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-31",
+  "checked_payload_files_excluding_receipt_and_manifest": 121,
+  "manifest_file_count_including_receipt": 122,
+  "total_repository_files_including_manifest": 123,
+  "bytes": 1804786,
+  "json_yaml_svg_parse": true,
+  "secret_pattern_matches": [],
+  "core_patch_forward_check_on_fixed_base": true,
+  "core_patch_reverse_check_against_current_source": true,
+  "source_diff_unchanged": true,
+  "plugin_patch_reverse_check_against_current_copies": true,
+  "javascript_syntax_files": 19,
+  "runtime_model_tests_run": false,
+  "windows_desktop_adoption_verified": false,
+  "scope": "export artifact checks; does not certify security or portability"
+}

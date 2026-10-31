@@ -1,0 +1,26 @@
+{
+  "name": "dsh-profile-web",
+  "private": true,
+  "dependencies": {
+    "@deepseek-ai/dsh-experimental-agent-team-profile": "link:${TARGET_PLUGIN_OR_SOURCE_ROOT}/agent-team-profile",
+    "@nanmicoder/dsh-agent-teams": "link:${TARGET_PLUGIN_OR_SOURCE_ROOT}/nanmicoder__dsh-agent-teams",
+    "dsh-context": "link:${TARGET_PLUGIN_OR_SOURCE_ROOT}/dsh-context",
+    "dsh-ops": "link:${TARGET_PLUGIN_OR_SOURCE_ROOT}/dsh-ops-0.4.4-alpha2",
+    "dsh-our-free-model": "link:${TARGET_PLUGIN_OR_SOURCE_ROOT}/dsh-our-free-model",
+    "dsh-plugin-chatgpt": "link:${TARGET_PLUGIN_OR_SOURCE_ROOT}/dsh-plugin-chatgpt"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "dsh-our-free-model",
+        "dsh-plugin-chatgpt",
+        "@nanmicoder/dsh-agent-teams",
+        "dsh-context",
+        "dsh-ops",
+        "@deepseek-ai/dsh-experimental-agent-team-profile"
+      ]
+    }
+  }
+}

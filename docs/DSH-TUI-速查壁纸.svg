@@ -1,0 +1,265 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 1920 1080">
+<rect width="1920" height="1080" fill="#031725"/>
+<style>text{font-family:"Noto Sans Mono CJK SC";fill:#dfe9ef} .cmd{fill:#79edf0}.head{fill:#67e5eb;font-weight:bold}</style>
+<text x="762.00" y="34.00" font-size="23.00" class="head">DSH TUI 工作基准 · 高密度操作速查</text>
+<text x="714.00" y="58.00" font-size="13.00" class="">RC3 / TUI 0.17.0 · PTC + OPS + 本地主模型 · 路径、名称、ID 替换为实际值</text>
+<path d="M32 69H1888" stroke="#288b99" stroke-width="1"/>
+<text x="32.00" y="96.00" font-size="17.00" class="head">01  启动与项目目录</text>
+<text x="32.00" y="123.00" font-size="13.75" class="cmd">dsh-baseline</text>
+<text x="324.00" y="123.00" font-size="13.75" class="">启动工作基准</text>
+<text x="32.00" y="139.75" font-size="13.75" class="cmd">dsh-baseline "路径"</text>
+<text x="324.00" y="139.75" font-size="13.75" class="">在指定项目启动</text>
+<text x="32.00" y="156.50" font-size="13.75" class="cmd">dsh-baseline --version</text>
+<text x="324.00" y="156.50" font-size="13.75" class="">查看固定版本</text>
+<text x="32.00" y="173.25" font-size="13.75" class="">项目文件夹 = 磁盘目录；工作区 = 目录登记</text>
+<text x="32.00" y="190.00" font-size="13.75" class="cmd">mkdir -p "路径"</text>
+<text x="324.00" y="190.00" font-size="13.75" class="">终端先创建项目文件夹</text>
+<text x="32.00" y="206.75" font-size="13.75" class="cmd">/workspace open 路径</text>
+<text x="324.00" y="206.75" font-size="13.75" class="">打开目录并新建对话</text>
+<text x="32.00" y="223.50" font-size="13.75" class="cmd">/workspace resume</text>
+<text x="324.00" y="223.50" font-size="13.75" class="">选工作区并新建对话</text>
+<text x="32.00" y="240.25" font-size="13.75" class="cmd">/workspace rename 名称</text>
+<text x="324.00" y="240.25" font-size="13.75" class="">改工作区显示名</text>
+<text x="32.00" y="257.00" font-size="13.75" class="cmd">/status</text>
+<text x="324.00" y="257.00" font-size="13.75" class="">核对当前 cwd、模型和会话 ID</text>
+<text x="32.00" y="273.75" font-size="13.75" class="cmd">/init</text>
+<text x="324.00" y="273.75" font-size="13.75" class="">创建缺失的 AGENTS.md，已有规则保留</text>
+<text x="32.00" y="290.50" font-size="13.75" class="">从目录启动会登记工作区；没有“＋建文件夹”</text>
+<text x="32.00" y="307.25" font-size="13.75" class="">移除工作区仅忘记登记，保留项目文件和对话</text>
+<text x="32.00" y="334.00" font-size="17.00" class="head">02  查找与恢复旧对话</text>
+<text x="32.00" y="361.00" font-size="13.75" class="cmd">/agentview</text>
+<text x="324.00" y="361.00" font-size="13.75" class="">打开完整工作区／会话管理器</text>
+<text x="32.00" y="377.75" font-size="13.75" class="">← 进左栏；↑/↓ 选项目；→ 进右栏</text>
+<text x="32.00" y="394.50" font-size="13.75" class="">↑/↓ 选历史对话；Enter 打开继续</text>
+<text x="32.00" y="411.25" font-size="13.75" class="cmd">直接输入</text>
+<text x="324.00" y="411.25" font-size="13.75" class="">搜索标题、标签、路径、分支、模型</text>
+<text x="32.00" y="428.00" font-size="13.75" class="cmd">Esc</text>
+<text x="324.00" y="428.00" font-size="13.75" class="">先清筛选／关菜单，再返回</text>
+<text x="32.00" y="444.75" font-size="13.75" class="cmd">Ctrl+L</text>
+<text x="324.00" y="444.75" font-size="13.75" class="">刷新列表；Ctrl+N — 选区新建对话</text>
+<text x="32.00" y="461.50" font-size="13.75" class="cmd">/resume · /home</text>
+<text x="324.00" y="461.50" font-size="13.75" class="">导航，分栏时可能进侧栏</text>
+<text x="32.00" y="478.25" font-size="13.75" class="">右栏顶部“新建”是操作卡，不是最近的对话</text>
+<text x="32.00" y="495.00" font-size="13.75" class="">点击项目的“编辑／Edit”进入其对话列表</text>
+<text x="32.00" y="511.75" font-size="13.75" class="">找不到：清筛选 → 选项目 → 查来源 → 刷新</text>
+<text x="32.00" y="528.50" font-size="13.75" class="">历史也可能在未登记分组；窄屏先加宽</text>
+<text x="32.00" y="545.25" font-size="13.75" class="">精确 ID：在终端用 dsh-baseline --resume ID</text>
+<text x="32.00" y="572.00" font-size="17.00" class="head">03  模型、PTC 与权限</text>
+<text x="32.00" y="599.00" font-size="13.75" class="cmd">/model</text>
+<text x="324.00" y="599.00" font-size="13.75" class="">选择提供方和模型路线</text>
+<text x="32.00" y="615.75" font-size="13.75" class="cmd">/effort</text>
+<text x="324.00" y="615.75" font-size="13.75" class="">查看／选择实际思考强度</text>
+<text x="32.00" y="632.50" font-size="13.75" class="cmd">/effort xhigh</text>
+<text x="324.00" y="632.50" font-size="13.75" class="">设置当前模型支持的强度</text>
+<text x="32.00" y="649.25" font-size="13.75" class="cmd">/thinking</text>
+<text x="324.00" y="649.25" font-size="13.75" class="">仅显示／隐藏思考文本</text>
+<text x="32.00" y="666.00" font-size="13.75" class="cmd">/preset status</text>
+<text x="324.00" y="666.00" font-size="13.75" class="">查看当前 Agent 预设</text>
+<text x="32.00" y="682.75" font-size="13.75" class="cmd">/preset ptc</text>
+<text x="324.00" y="682.75" font-size="13.75" class="">空白新会话选择 PTC</text>
+<text x="32.00" y="699.50" font-size="13.75" class="cmd">/permission</text>
+<text x="324.00" y="699.50" font-size="13.75" class="">查看／选择会话权限</text>
+<text x="32.00" y="716.25" font-size="13.75" class="cmd">Shift+Tab</text>
+<text x="324.00" y="716.25" font-size="13.75" class="">在聊天输入场景循环会话模式</text>
+<text x="32.00" y="733.00" font-size="13.75" class="">旧对话保留原模型／预设，恢复后再核对</text>
+<text x="32.00" y="749.75" font-size="13.75" class="">账号登录不会自动切换当前模型</text>
+<text x="32.00" y="766.50" font-size="13.75" class="">图片能作为附件，不代表当前模型支持看图</text>
+<text x="32.00" y="783.25" font-size="13.75" class="">隐藏思考不提速；是否有效以模型与状态为准</text>
+<text x="32.00" y="810.00" font-size="17.00" class="head">04  输入、编辑与附件</text>
+<text x="32.00" y="837.00" font-size="13.75" class="cmd">Enter</text>
+<text x="324.00" y="837.00" font-size="13.75" class="">发送；Shift+Enter — 换行</text>
+<text x="32.00" y="853.75" font-size="13.75" class="cmd">Ctrl+V / Alt+V</text>
+<text x="324.00" y="853.75" font-size="13.75" class="">TUI 粘贴文字、文件、截图</text>
+<text x="32.00" y="870.50" font-size="13.75" class="cmd">Ctrl+Shift+V</text>
+<text x="324.00" y="870.50" font-size="13.75" class="">终端粘贴文字</text>
+<text x="32.00" y="887.25" font-size="13.75" class="cmd">@路径#L12-40</text>
+<text x="324.00" y="887.25" font-size="13.75" class="">引用文件及行范围</text>
+<text x="32.00" y="904.00" font-size="13.75" class="cmd">Tab</text>
+<text x="324.00" y="904.00" font-size="13.75" class="">补全命令／候选；↑/↓ — 输入历史</text>
+<text x="32.00" y="920.75" font-size="13.75" class="cmd">Ctrl+R</text>
+<text x="324.00" y="920.75" font-size="13.75" class="">搜索历史输入，不是搜索旧对话</text>
+<text x="32.00" y="937.50" font-size="13.75" class="cmd">Ctrl+G</text>
+<text x="324.00" y="937.50" font-size="13.75" class="">打开长文草稿编辑器</text>
+<text x="32.00" y="954.25" font-size="13.75" class="cmd">Ctrl+Shift+E</text>
+<text x="324.00" y="954.25" font-size="13.75" class="">展开输入编辑器</text>
+<text x="32.00" y="971.00" font-size="13.75" class="cmd">Ctrl+Z</text>
+<text x="324.00" y="971.00" font-size="13.75" class="">撤销输入，不是项目代码回滚</text>
+<text x="32.00" y="987.75" font-size="13.75" class="cmd">!命令</text>
+<text x="324.00" y="987.75" font-size="13.75" class="">实际执行 Shell 命令</text>
+<text x="32.00" y="1004.50" font-size="13.75" class="cmd">/vim</text>
+<text x="324.00" y="1004.50" font-size="13.75" class="">切换输入框 Vim 模式</text>
+<text x="32.00" y="1021.25" font-size="13.75" class="cmd">/terminal-setup</text>
+<text x="324.00" y="1021.25" font-size="13.75" class="">查看终端与粘贴提示</text>
+<path d="M646.6666666666666 82V1048" stroke="#23606f" stroke-width="1"/>
+<text x="658.67" y="96.00" font-size="17.00" class="head">05  面板导航与布局</text>
+<text x="658.67" y="123.00" font-size="13.75" class="cmd">/panel</text>
+<text x="950.67" y="123.00" font-size="13.75" class="">选择已启用面板</text>
+<text x="658.67" y="139.75" font-size="13.75" class="cmd">/panel workspace</text>
+<text x="950.67" y="139.75" font-size="13.75" class="">项目和对话导航</text>
+<text x="658.67" y="156.50" font-size="13.75" class="cmd">/panel todo · /panel jobs</text>
+<text x="950.67" y="156.50" font-size="13.75" class="">待办／后台作业</text>
+<text x="658.67" y="173.25" font-size="13.75" class="cmd">/panel agents · /panel info</text>
+<text x="950.67" y="173.25" font-size="13.75" class="">代理／会话信息</text>
+<text x="658.67" y="190.00" font-size="13.75" class="cmd">/panel trajectory</text>
+<text x="950.67" y="190.00" font-size="13.75" class="">执行轨迹</text>
+<text x="658.67" y="206.75" font-size="13.75" class="cmd">/panel btw · /panel companion</text>
+<text x="950.67" y="206.75" font-size="13.75" class="">侧问／伙伴</text>
+<text x="658.67" y="223.50" font-size="13.75" class="cmd">Ctrl+B</text>
+<text x="950.67" y="223.50" font-size="13.75" class="">打开／聚焦侧栏；Esc 返回聊天</text>
+<text x="658.67" y="240.25" font-size="13.75" class="">聚焦侧栏时 ←/→ 或 [ / ] 切面板</text>
+<text x="658.67" y="257.00" font-size="13.75" class="cmd">Alt+Z 或 /panel zoom</text>
+<text x="950.67" y="257.00" font-size="13.75" class="">放大／还原</text>
+<text x="658.67" y="273.75" font-size="13.75" class="cmd">/panel toggle · /panel focus</text>
+<text x="950.67" y="273.75" font-size="13.75" class="">显隐／聚焦</text>
+<text x="658.67" y="290.50" font-size="13.75" class="">拖动分隔线调宽；聚焦时 + / - 也可调整</text>
+<text x="658.67" y="307.25" font-size="13.75" class="">无侧栏：加宽终端，检查全屏／分栏／启用项</text>
+<text x="658.67" y="334.00" font-size="17.00" class="head">06  设置、插件与服务</text>
+<text x="658.67" y="361.00" font-size="13.75" class="cmd">/settings</text>
+<text x="950.67" y="361.00" font-size="13.75" class="">常规与插件设置页</text>
+<text x="658.67" y="377.75" font-size="13.75" class="cmd">设置页 Tab / Shift+Tab</text>
+<text x="950.67" y="377.75" font-size="13.75" class="">切换页签</text>
+<text x="658.67" y="394.50" font-size="13.75" class="cmd">/plugin</text>
+<text x="950.67" y="394.50" font-size="13.75" class="">插件管理与诊断入口</text>
+<text x="658.67" y="411.25" font-size="13.75" class="cmd">/plugin list</text>
+<text x="950.67" y="411.25" font-size="13.75" class="">当前插件列表</text>
+<text x="658.67" y="428.00" font-size="13.75" class="cmd">/plugin info dsh-ops</text>
+<text x="950.67" y="428.00" font-size="13.75" class="">查看 OPS 插件信息</text>
+<text x="658.67" y="444.75" font-size="13.75" class="cmd">/plugin registries</text>
+<text x="950.67" y="444.75" font-size="13.75" class="">查看插件源信息</text>
+<text x="658.67" y="461.50" font-size="13.75" class="cmd">/mcp</text>
+<text x="950.67" y="461.50" font-size="13.75" class="">MCP 服务和工具状态</text>
+<text x="658.67" y="478.25" font-size="13.75" class="cmd">/skills</text>
+<text x="950.67" y="478.25" font-size="13.75" class="">已发现技能及调用入口</text>
+<text x="658.67" y="495.00" font-size="13.75" class="cmd">/hooks</text>
+<text x="950.67" y="495.00" font-size="13.75" class="">查看 Hooks 状态</text>
+<text x="658.67" y="511.75" font-size="13.75" class="cmd">/theme · /color · /lang zh</text>
+<text x="950.67" y="511.75" font-size="13.75" class="">主题／强调色／中文</text>
+<text x="658.67" y="528.50" font-size="13.75" class="">安装插件不保证它提供面板或服务已加载</text>
+<text x="658.67" y="545.25" font-size="13.75" class="">固定基准改插件／升级前先核验兼容性</text>
+<text x="658.67" y="572.00" font-size="17.00" class="head">07  上下文与会话分支</text>
+<text x="658.67" y="599.00" font-size="13.75" class="cmd">/new</text>
+<text x="950.67" y="599.00" font-size="13.75" class="">当前项目新对话，旧历史保留</text>
+<text x="658.67" y="615.75" font-size="13.75" class="cmd">/rename 标题</text>
+<text x="950.67" y="615.75" font-size="13.75" class="">修改当前对话标题</text>
+<text x="658.67" y="632.50" font-size="13.75" class="cmd">/context · Ctrl+P</text>
+<text x="950.67" y="632.50" font-size="13.75" class="">查看已加载上下文</text>
+<text x="658.67" y="649.25" font-size="13.75" class="cmd">/tokens · /cost</text>
+<text x="950.67" y="649.25" font-size="13.75" class="">用量、窗口／费用估算</text>
+<text x="658.67" y="666.00" font-size="13.75" class="cmd">/compact</text>
+<text x="950.67" y="666.00" font-size="13.75" class="">压缩同任务上下文，可能调用模型</text>
+<text x="658.67" y="682.75" font-size="13.75" class="cmd">/clear</text>
+<text x="950.67" y="682.75" font-size="13.75" class="">仅清显示，不重置模型上下文</text>
+<text x="658.67" y="699.50" font-size="13.75" class="cmd">/fork</text>
+<text x="950.67" y="699.50" font-size="13.75" class="">创建会话副本，不复制项目文件夹</text>
+<text x="658.67" y="716.25" font-size="13.75" class="cmd">/tree</text>
+<text x="950.67" y="716.25" font-size="13.75" class="">查看会话家族树与分支</text>
+<text x="658.67" y="733.00" font-size="13.75" class="cmd">/rewind · 空输入双 Esc</text>
+<text x="950.67" y="733.00" font-size="13.75" class="">选择回退节点</text>
+<text x="658.67" y="749.75" font-size="13.75" class="cmd">/export</text>
+<text x="950.67" y="749.75" font-size="13.75" class="">导出 Markdown 到当前工作目录</text>
+<text x="658.67" y="766.50" font-size="13.75" class="cmd">/recap</text>
+<text x="950.67" y="766.50" font-size="13.75" class="">调用模型回顾近期活动</text>
+<text x="658.67" y="783.25" font-size="13.75" class="">回退不保证恢复文件；导出分享前检查内容</text>
+<text x="658.67" y="810.00" font-size="17.00" class="head">08  OPS 任务看板与验收</text>
+<text x="658.67" y="837.00" font-size="13.75" class="cmd">/board new 标题 | 要求</text>
+<text x="950.67" y="837.00" font-size="13.75" class="">创建任务卡</text>
+<text x="658.67" y="853.75" font-size="13.75" class="cmd">/board list</text>
+<text x="950.67" y="853.75" font-size="13.75" class="">查看任务卡列表</text>
+<text x="658.67" y="870.50" font-size="13.75" class="cmd">/board show ID</text>
+<text x="950.67" y="870.50" font-size="13.75" class="">查看具体状态／结果</text>
+<text x="658.67" y="887.25" font-size="13.75" class="cmd">/board run ID</text>
+<text x="950.67" y="887.25" font-size="13.75" class="">提交实际执行</text>
+<text x="658.67" y="904.00" font-size="13.75" class="cmd">/board note ID 说明</text>
+<text x="950.67" y="904.00" font-size="13.75" class="">追加备注</text>
+<text x="658.67" y="920.75" font-size="13.75" class="cmd">/board reject ID 反馈</text>
+<text x="950.67" y="920.75" font-size="13.75" class="">打回重做</text>
+<text x="658.67" y="937.50" font-size="13.75" class="cmd">/board confirm ID</text>
+<text x="950.67" y="937.50" font-size="13.75" class="">人工验收通过</text>
+<text x="658.67" y="954.25" font-size="13.75" class="">流程：创建 → 执行 → review → 检查 → 验收</text>
+<text x="658.67" y="971.00" font-size="13.75" class="">ID 可用唯一前缀，至少 6 个字符</text>
+<text x="658.67" y="987.75" font-size="13.75" class="">辅助 Web：http://127.0.0.1:43934</text>
+<text x="658.67" y="1004.50" font-size="13.75" class="">关闭整个 TUI 后，看板 Host 也退出</text>
+<text x="658.67" y="1021.25" font-size="13.75" class="">已受理不等于已执行；review 是待验收</text>
+<path d="M1273.3333333333333 82V1048" stroke="#23606f" stroke-width="1"/>
+<text x="1285.33" y="96.00" font-size="17.00" class="head">09  目标、后台任务与协作</text>
+<text x="1285.33" y="123.00" font-size="13.75" class="cmd">/goal 目标</text>
+<text x="1577.33" y="123.00" font-size="13.75" class="">开启长任务目标</text>
+<text x="1285.33" y="139.75" font-size="13.75" class="cmd">/goal pause · /goal resume</text>
+<text x="1577.33" y="139.75" font-size="13.75" class="">暂停／继续</text>
+<text x="1285.33" y="156.50" font-size="13.75" class="cmd">/goal edit 目标 · /goal clear</text>
+<text x="1577.33" y="156.50" font-size="13.75" class="">修改／清除</text>
+<text x="1285.33" y="173.25" font-size="13.75" class="cmd">/bg</text>
+<text x="1577.33" y="173.25" font-size="13.75" class="">暂放当前会话并进入管理器</text>
+<text x="1285.33" y="190.00" font-size="13.75" class="cmd">管理器 Ctrl+X</text>
+<text x="1577.33" y="190.00" font-size="13.75" class="">停止后台会话</text>
+<text x="1285.33" y="206.75" font-size="13.75" class="cmd">/jobs</text>
+<text x="1577.33" y="206.75" font-size="13.75" class="">后台作业；e 展开输出</text>
+<text x="1285.33" y="223.50" font-size="13.75" class="cmd">/jobs 中连续两次 k</text>
+<text x="1577.33" y="223.50" font-size="13.75" class="">停止选中作业</text>
+<text x="1285.33" y="240.25" font-size="13.75" class="cmd">/agents · /team</text>
+<text x="1577.33" y="240.25" font-size="13.75" class="">子代理／已加载团队状态</text>
+<text x="1285.33" y="257.00" font-size="13.75" class="cmd">/btw 问题</text>
+<text x="1577.33" y="257.00" font-size="13.75" class="">侧问，可能调用模型</text>
+<text x="1285.33" y="273.75" font-size="13.75" class="cmd">/trace</text>
+<text x="1577.33" y="273.75" font-size="13.75" class="">查看会话执行轨迹</text>
+<text x="1285.33" y="290.50" font-size="13.75" class="cmd">Ctrl+C</text>
+<text x="1577.33" y="290.50" font-size="13.75" class="">停止当前生成，等待收尾</text>
+<text x="1285.33" y="307.25" font-size="13.75" class="">切换对话不等于停任务；Team 入口不代表已启用</text>
+<text x="1285.33" y="334.00" font-size="17.00" class="head">10  账号、历史来源与内核</text>
+<text x="1285.33" y="361.00" font-size="13.75" class="cmd">/auth status</text>
+<text x="1577.33" y="361.00" font-size="13.75" class="">查看 DeepSeek 授权状态</text>
+<text x="1285.33" y="377.75" font-size="13.75" class="cmd">/auth login deepseek-account</text>
+<text x="1577.33" y="377.75" font-size="13.75" class="">发起账号登录</text>
+<text x="1285.33" y="394.50" font-size="13.75" class="cmd">/balance</text>
+<text x="1577.33" y="394.50" font-size="13.75" class="">已支持的账号余额信息</text>
+<text x="1285.33" y="411.25" font-size="13.75" class="">登录后用 /model 选择账号模型路线</text>
+<text x="1285.33" y="428.00" font-size="13.75" class="">本地主模型无需 DeepSeek 账号</text>
+<text x="1285.33" y="444.75" font-size="13.75" class="">基准 Web / TUI 共用本机 DSH 账号凭据</text>
+<text x="1285.33" y="461.50" font-size="13.75" class="cmd">/provider</text>
+<text x="1577.33" y="461.50" font-size="13.75" class="">提供方配置入口，编辑会改配置</text>
+<text x="1285.33" y="478.25" font-size="13.75" class="cmd">/migrate codex --dry-run</text>
+<text x="1577.33" y="478.25" font-size="13.75" class="">预览历史导入</text>
+<text x="1285.33" y="495.00" font-size="13.75" class="">真正导入会写入 DSH；导入不等于原工具恢复</text>
+<text x="1285.33" y="511.75" font-size="13.75" class="cmd">/kernel</text>
+<text x="1577.33" y="511.75" font-size="13.75" class="">选择执行内核，可能安装／重启</text>
+<text x="1285.33" y="528.50" font-size="13.75" class="cmd">/dsh · /codex · /claude</text>
+<text x="1577.33" y="528.50" font-size="13.75" class="">内核切换入口</text>
+<text x="1285.33" y="545.25" font-size="13.75" class="">本手册以 DSH 为准；换内核后命令语义可能变化</text>
+<text x="1285.33" y="572.00" font-size="17.00" class="head">11  退出、保活与终端恢复</text>
+<text x="1285.33" y="599.00" font-size="13.75" class="cmd">/exit</text>
+<text x="1577.33" y="599.00" font-size="13.75" class="">正常退出整个 TUI；/quit、/q 同义</text>
+<text x="1285.33" y="615.75" font-size="13.75" class="cmd">终端：dsh-baseline --resume ID</text>
+<text x="1577.33" y="615.75" font-size="13.75" class="">恢复会话</text>
+<text x="1285.33" y="632.50" font-size="13.75" class="">需要关闭终端后继续运行：先在 tmux 内启动</text>
+<text x="1285.33" y="649.25" font-size="13.75" class="cmd">tmux new -s dsh-workbench</text>
+<text x="1577.33" y="649.25" font-size="13.75" class="">创建终端会话</text>
+<text x="1285.33" y="666.00" font-size="13.75" class="">在该 tmux 内运行 dsh-baseline</text>
+<text x="1285.33" y="682.75" font-size="13.75" class="cmd">Ctrl+B 再 D</text>
+<text x="1577.33" y="682.75" font-size="13.75" class="">分离 tmux 并保留程序运行</text>
+<text x="1285.33" y="699.50" font-size="13.75" class="cmd">tmux attach -t dsh-workbench</text>
+<text x="1577.33" y="699.50" font-size="13.75" class="">回到终端</text>
+<text x="1285.33" y="716.25" font-size="13.75" class="cmd">tmux 内 Ctrl+B 再 Ctrl+B</text>
+<text x="1577.33" y="716.25" font-size="13.75" class="">将 Ctrl+B 传给 TUI</text>
+<text x="1285.33" y="733.00" font-size="13.75" class="">也可用 /panel 命令避开前缀按键冲突</text>
+<text x="1285.33" y="749.75" font-size="13.75" class="">关闭普通终端窗口可能让 TUI Host 退出</text>
+<text x="1285.33" y="766.50" font-size="13.75" class="">别同时启动两个争用 43934 的基准实例</text>
+<text x="1285.33" y="783.25" font-size="13.75" class="">安全菜单：退出，修复原因，再运行 dsh-baseline</text>
+<text x="1285.33" y="810.00" font-size="17.00" class="head">12  排错与最容易混淆的地方</text>
+<text x="1285.33" y="837.00" font-size="13.75" class="cmd">/doctor · /help · ?</text>
+<text x="1577.33" y="837.00" font-size="13.75" class="">环境诊断／命令帮助</text>
+<text x="1285.33" y="853.75" font-size="13.75" class="cmd">/status</text>
+<text x="1577.33" y="853.75" font-size="13.75" class="">先确认会话 ID、目录与模型</text>
+<text x="1285.33" y="870.50" font-size="13.75" class="cmd">/config</text>
+<text x="1577.33" y="870.50" font-size="13.75" class="">配置来源，分享前检查敏感信息</text>
+<text x="1285.33" y="887.25" font-size="13.75" class="cmd">/reload</text>
+<text x="1577.33" y="887.25" font-size="13.75" class="">读取支持的偏好，不是全面热加载</text>
+<text x="1285.33" y="904.00" font-size="13.75" class="">对话 OCCUPIED：回准确的持有终端，不删锁</text>
+<text x="1285.33" y="920.75" font-size="13.75" class="">43934 占用：检查已有实例，不杀不明进程</text>
+<text x="1285.33" y="937.50" font-size="13.75" class="">粘贴报错：桌面会话、PATH、附件格式分别检查</text>
+<text x="1285.33" y="954.25" font-size="13.75" class="">乱码／残留：Ctrl+L 重绘，检查字体与 UTF-8</text>
+<text x="1285.33" y="971.00" font-size="13.75" class="">列表空白：清搜索、选项目、刷新、加宽窗口</text>
+<text x="1285.33" y="987.75" font-size="13.75" class="">登录后仍是本地：/model 选择账号路线</text>
+<text x="1285.33" y="1004.50" font-size="13.75" class="">基准勿直接 /update；插件启停也会改组合</text>
+<text x="1285.33" y="1021.25" font-size="13.75" class="">新对话 ≠ 新文件夹；隐藏思考 ≠ 关闭思考</text>
+<text x="639.00" y="1066.00" font-size="12.00" class="">项目目录 → 工作区 → 多个对话 → 具体任务    ｜    完整手册：项目目录 / 使用手册    ｜    2026-10-30 · v3</text>
+</svg>

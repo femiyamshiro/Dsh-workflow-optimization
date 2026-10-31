@@ -1,0 +1,6 @@
+# Minimal reference only. Merge against the verified native Desktop profile.
+# Do not replace Desktop connection/auth/server rows with Linux Web/TUI rows.
+- id: agent-preset-registry
+  config:
+    default: ptc
+    selectedDefault: ptc

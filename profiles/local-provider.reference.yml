@@ -1,0 +1,55 @@
+# Reference only: loopback is the target machine, not the original server.
+# Populate credentials only on the target; endpoint reachability and model capacity require verification.
+- id: llm-pi-ai
+  config:
+    providers:
+      femiya-local:
+        displayName: 本机主模型
+        api: openai-completions
+        baseURL: http://127.0.0.1:8094/v1
+        apiKeyEnv: FEMIYA_LOCAL_MODEL_API_KEY
+        reasoning: 'off'
+        timeoutMs: 10800000
+        streamIdleTimeoutMs: 900000
+        retryPolicy:
+          mode: normal
+          maxRetries: 0
+        compat:
+          supportsStore: false
+          supportsDeveloperRole: false
+          supportsStrictMode: false
+          maxTokensField: max_tokens
+          thinkingFormat: chat-template
+          chatTemplateKwargs:
+            enable_thinking:
+              $var: thinking.enabled
+        models:
+        - id: flash-next-iq3-xxs
+          name: IQ3_XXS · 常驻主模型
+          contextWindow: 196608
+          maxTokens: 57344
+          input:
+          - text
+          - image
+          reasoningEfforts:
+            low: low
+            medium: medium
+            xhigh: xhigh
+            'off': 'off'
+          compat:
+            chatTemplateKwargs:
+              enable_thinking:
+                $var: thinking.enabled
+              reasoning_effort:
+                $var: thinking.effort
+                omitWhenOff: true
+        - id: agents-a1-q8_0
+          name: Agents-A1 Q8_0 · 手动切换
+          contextWindow: 196608
+          maxTokens: 57344
+          input:
+          - text
+          - image
+          reasoningEfforts:
+            high: high
+            'off': 'off'

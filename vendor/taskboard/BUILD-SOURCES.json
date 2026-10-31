@@ -1,0 +1,12 @@
+{
+  "vendor/taskboard/tsdown.config.ts": {
+    "repository": "kira905/dsh-task-board-local",
+    "git_blob_sha1": "fee418f31cfab0afbc97e0a33f96eddabadd0139",
+    "sha256": "1ae6adc54f796cbfe581d9a26bb7672297ce408239216b91cc06a2dedb6ce61c"
+  },
+  "vendor/taskboard/tsconfig.json": {
+    "repository": "kira905/dsh-task-board-local",
+    "git_blob_sha1": "9fd75f51b0ffb8111762652aa4fe15789be21138",
+    "sha256": "07c08afd7898bd0257304707cf7e06c9545baeac667057f902e94e7e904ba48e"
+  }
+}
