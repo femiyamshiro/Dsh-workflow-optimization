@@ -156,7 +156,7 @@
     "current/vendor/taskboard/src/settings-compat.ts": "cdbcaee06fcffb44cacce12430e3bbfbd12759816f0d6b8673984163ffc78f82"
   },
   "readerChecks": {
-    "README.md": "7c51dc3aa97e829564b3450f2602d16ad5762d39ce64e10bc49e336d2ebb3dd6",
+    "README.md": "a9d039529c1ecf407bb5ae17bc84eff03d438f2285ebe49ada67d373939b8164",
     "AGENTS.md": "41c524553eff4425fb8a4ee0ab8c1838fe9b32a0483aeae8767e08f72d51f80a",
     "THIRD-PARTY-NOTICES.md": "9fb891f9d28cace2af31514a44f6c1d2eabdd16d15f37e98b04a34d316086a6d",
     "tools/verify-current.mjs": "fff97ee2e876a3e3b8ae7cf11fde6cda214eb713bd4b34b484fc002481600dd4"
