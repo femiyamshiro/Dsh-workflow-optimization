@@ -1,0 +1,8 @@
+# Reference only. Merge into a target-side profile; do not overwrite existing settings.
+- id: agent-preset-registry
+  config:
+    default: ptc
+    selectedDefault: ptc
+- id: agent-instructions
+  config:
+    maxBytes: 131072

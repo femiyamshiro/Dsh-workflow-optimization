@@ -1,0 +1,75 @@
+{
+  "name": "dsh-live-compact",
+  "version": "1.0.7-rc5.local.20261105",
+  "description": "In-place newest-turn compaction for DeepSeek Harness. Compress while the task runs and keep the prefix.",
+  "license": "MIT",
+  "type": "module",
+  "main": "shell.js",
+  "bin": {
+    "dsh-live-compact": "bin/dsh-live-compact.js"
+  },
+  "exports": {
+    ".": "./shell.js",
+    "./engine": "./index.js",
+    "./gate": "./gate.js",
+    "./shadow-search": "./shadow-search.js"
+  },
+  "files": [
+    "shell.js",
+    "index.js",
+    "gate.js",
+    "plan.js",
+    "raw.js",
+    "shadow.js",
+    "shadow-search.js",
+    "thunder.js",
+    "native-helper",
+    "bin",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "dsh",
+    "compaction"
+  ],
+  "engines": {
+    "node": "^22.19 || >=24",
+    "dsh": "0.2.1-rc.5"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-compaction": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-compaction-basic": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-llm": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-session": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-scope": "0.2.1-rc.5"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-compaction": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-compaction-basic": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-llm": "0.2.1-rc.5"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MerkyorLynn/dsh-live-compact.git"
+  },
+  "homepage": "https://github.com/MerkyorLynn/dsh-live-compact#readme",
+  "bugs": {
+    "url": "https://github.com/MerkyorLynn/dsh-live-compact/issues"
+  },
+  "qualification": {
+    "scope": "fixed rc.5 local derivative; Linux verification summarized separately; not an upstream release or Windows qualification",
+    "pluginSourceCommit": "c50c58b00cf8545c6524272563f99bc7f2779384",
+    "dshSourceCommit": "b830ec950faba0a46dda564be3e2d854afed94f1",
+    "dshVersion": "0.2.1-rc.5",
+    "nativeHelper": "native-helper/PROVENANCE.md",
+    "sourceArchiveCheckpoint": "671d368f7f5190c8f99ad8c1de412eedf1b4c2be"
+  }
+}

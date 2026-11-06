@@ -1,0 +1,29 @@
+{
+  "name": "dsh-current-tui-reference",
+  "private": true,
+  "type": "module",
+  "description": "Reference only: apply core/OPS patches and adapt target credentials/settings before installation",
+  "dependencies": {
+    "@deepseek-ai/dsh-base": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-web-app": "0.2.1-rc.5",
+    "dsh-ops": "0.4.4",
+    "dsh-context": "0.81.2",
+    "dsh-live-compact": "file:../../vendor/live-compact",
+    "@deepseek-harness-tui/dsh-tui": "0.18.0",
+    "@kira905/dsh-task-board-local": "file:../../vendor/taskboard",
+    "@kira905/dsh-session-toolkit": "file:../../vendor/session-toolkit"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "dsh-ops",
+        "dsh-context",
+        "dsh-live-compact",
+        "@deepseek-harness-tui/dsh-tui",
+        "@kira905/dsh-task-board-local"
+      ]
+    }
+  }
+}

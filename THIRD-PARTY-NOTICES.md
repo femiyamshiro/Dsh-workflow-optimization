@@ -1,17 +1,16 @@
-# 第三方来源与许可保留
+# 来源与许可
 
-| 项目 | 来源 | 本包包含的内容/许可证 |
+本仓库不把第三方内容统一改授为同一许可证；每个vendor目录及current/licenses保留对应LICENSE/NOTICE。
+
+| 项目 | 固定来源/内容 | 许可 |
 |---|---|---|
-| DeepSeek Harness | https://github.com/deepseek-ai/deepseek-harness | alpha.2 补丁；MIT 原文在 licenses |
-| ops-handoff-design | https://github.com/kira905/ops-handoff-design | 设计来源链接，不重新打包十一篇设计文档 |
-| @kira905/dsh-task-board-local 1.1.5 | https://github.com/kira905/dsh-task-board-local | 实际本地修订的源码与构建产物；Apache-2.0 LICENSE、原 NOTICE 保留于 vendor/taskboard |
-| @kira905/dsh-session-toolkit 0.1.1 | https://github.com/kira905/dsh-session-toolkit | 实际本地修订源码；AGPL-3.0-only LICENSE 保留于 vendor/session-toolkit |
-| dsh-ops | https://github.com/T-Auto/dsh-ops | 0.4.4 实验元数据参考；MIT LICENSE/NOTICE 保留于 licenses |
-| DSH TUI | https://github.com/ccch1mneyyy/dsh-TUI | 0.17.0 实验兼容补丁；MIT 原文在 licenses |
-| @nanmicoder/dsh-agent-teams | https://github.com/NanmiCoder/dsh-agent-teams | 本地运行代码适配及实验元数据补丁；MIT 原文在 licenses |
-| dsh-context | https://github.com/bowenliang123/dsh-context | 实验元数据补丁；Apache-2.0 原文在 licenses |
-| dsh-working-activity | https://github.com/ccch1mneyyy/working-activity | 实验元数据补丁；BSD-3-Clause 原文在 licenses |
+| [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | b830ec950faba0a46dda564be3e2d854afed94f1源码补丁、原生事务helper | MIT |
+| [dsh-ops](https://github.com/T-Auto/dsh-ops) | fc11890f7668c9912fcde1df1ca89810e1cbc031 / 0.4.4观察修复补丁 | MIT，原NOTICE保留 |
+| [ops-handoff-design](https://github.com/kira905/ops-handoff-design) | 工作台策略设计参考，不重打包11篇设计文档 | 本仓库只链接来源 |
+| [taskboard](https://github.com/kira905/dsh-task-board-local) | 1.1.5本地rc.5适配，源码与已有构建产物 | Apache-2.0，保留NOTICE |
+| [session-toolkit](https://github.com/kira905/dsh-session-toolkit) | 0.1.1本地v4日志/接力修订源码 | AGPL-3.0-only |
+| [Live Compact](https://github.com/MerkyorLynn/dsh-live-compact) | c50c58b00cf8545c6524272563f99bc7f2779384本地修复 | MIT |
+| [TUI](https://github.com/ccch1mneyyy/dsh-TUI) | 0.18.0依赖与验收说明，不复制完整包 | MIT原文保留 |
+| [Context](https://github.com/bowenliang123/dsh-context) | 0.81.2依赖与验收说明，不复制完整包 | Apache-2.0原文保留 |
 
-可选 Our Free Models 与 ChatGPT 插件的实验元数据补丁及原许可证也单独保留。未打包它们的认证数据、转发服务或客户端账户状态。第三方文件继续遵循各自原许可证；本包未对它们统一重新授权。正式对外共享或再分发时仍应逐个目录保留来源和完整许可。
-
-`principles` 保留通用工作原则的完整参考与 DSH 通用运行示例；服务器私人载体和记忆绑定未公开。它们属于本整合方案的用户管理参考，不冒充 DSH/OPS 上游规则，也不建立跨设备权限或自动推广。
+团队插件、Our Free Models和ChatGPT旧适配的公开历史仍在archive，最新导出不把私人账号或服务打包。归档保留原第三方说明；它的验证状态不转移到current。设计文本是本整合说明，不冒充上游正式标准。

@@ -1,0 +1,92 @@
+{
+  "name": "@kira905/dsh-task-board-local",
+  "description": "Self-maintained DSH Web task board (forked from @linxin666/dsh-client-ui-task-board 0.3.4, detached from upstream): human acceptance gate, card kinds (once/recurring/interactive), and editable notes on executed cards.",
+  "version": "1.1.5",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./invariant": {
+      "default": "./lib/invariant.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": "0.2.1-rc.5"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  },
+  "dependencies": {
+    "schemastery": "3.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "@types/react": "~18.3.1",
+    "@types/react-dom": "^18.3.5",
+    "lightningcss": "^1.28.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsdown": "0.22.2",
+    "typescript": "~5.7.2"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.js.map",
+    "lib/**/*.d.ts",
+    "lib/**/*.d.ts.map",
+    "src",
+    "cordis.patch.yml",
+    "NOTICE",
+    "CHANGELOG.md"
+  ],
+  "license": "Apache-2.0",
+  "scripts": {
+    "check:syntax": "node --check lib/index.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kira905/dsh-task-board-local.git"
+  },
+  "homepage": "https://github.com/kira905/dsh-task-board-local#readme",
+  "bugs": {
+    "url": "https://github.com/kira905/dsh-task-board-local/issues"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "task-board",
+    "dsh-client"
+  ],
+  "engines": {
+    "dsh": "0.2.1-rc.5"
+  },
+  "x-local-adaptation": {
+    "host": "0.2.1-rc.5",
+    "revision": "rc5.candidate.1",
+    "source": "<WORKSPACE_ROOT>/alpha-lab-20261030/plugins/taskboard-alpha",
+    "sourceManifestSha256": "7027d7749b079dc9204b271e8f0e2e75e49df613bf86b67b3dc4fbb55dfe1f92",
+    "qualification": "pending isolated Host tests"
+  }
+}

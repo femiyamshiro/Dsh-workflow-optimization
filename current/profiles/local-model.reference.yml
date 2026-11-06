@@ -1,0 +1,20 @@
+# Fill in the actual target-side endpoint and model ID. This does not select a default.
+- id: llm-pi-ai
+  config:
+    providers:
+      local-example:
+        displayName: Local model example
+        api: openai-completions
+        baseURL: http://127.0.0.1:8000/v1
+        apiKeyEnv: LOCAL_MODEL_API_KEY
+        timeoutMs: 1800000
+        streamIdleTimeoutMs: 900000
+        retryPolicy:
+          mode: normal
+          maxRetries: 0
+        models:
+          - id: replace-with-your-model-id
+            name: Replace with your model
+            contextWindow: 32768
+            maxTokens: 4096
+            input: [text]

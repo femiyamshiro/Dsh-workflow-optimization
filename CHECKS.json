@@ -1,0 +1,28 @@
+{
+  "latest": {
+    "exit": 0,
+    "expected": 0
+  },
+  "rc5": {
+    "exit": 0,
+    "expected": 0
+  },
+  "alpha2_requires_adapter": {
+    "exit": 2,
+    "expected": 2
+  },
+  "archive_absent_loads_latest": true,
+  "tampered_current_rejected": true,
+  "archive_active_reference_rejected": true,
+  "archive_reader_injection_rejected": true,
+  "missing_root_reader_rejected": true,
+  "core_patch_pristine_index_forward_check": true,
+  "ops_patch_fixed_index_forward_check": true,
+  "js_syntax_files": 34,
+  "reference_config_parses": 5,
+  "active_markdown_links": true,
+  "archived_public_snapshot_files": 123,
+  "privacy_pattern_findings": [],
+  "forbidden_runtime_artifacts": [],
+  "scope": "offline export checks; no runtime or paid-model calls; not a security certification or Windows adoption proof"
+}

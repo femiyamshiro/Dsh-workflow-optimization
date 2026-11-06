@@ -1,0 +1,166 @@
+--- a/src/file/worker.ts
++++ b/src/file/worker.ts
+@@ -64,17 +64,6 @@
+   try { ctx.emit('fs/observed', target, observation, exec) } catch { /* the completed effect stands */ }
+ }
+ 
+-/** Refresh host observations for files a completed replace wrote (#17). */
+-async function observeReplaced(ctx: Context, fsService: FileSystem | undefined, value: Record<string, unknown>, cwd: string, exec: ToolRunContext, signal: AbortSignal): Promise<void> {
+-  if (!fsService || value?.status !== 'completed' || value.dryRun || !(Number(value.changed) > 0) || !Array.isArray(value.items)) return
+-  for (const item of value.items) {
+-    if (!record(item) || typeof item.path !== 'string') continue
+-    const observed = await hostObservation(fsService, item.path, cwd, signal)
+-    // A size mismatch means another writer landed after our publish; leave the host to report stale.
+-    if ((item.removed && observed && observed.info === undefined) || (observed?.info?.type === 'file' && observed.info.size === item.bytesAfter)) emitObserved(ctx, observed, exec)
+-  }
+-}
+-
+ export async function invoke(ctx: Context, file: string, tool: string, args: unknown, exec: ToolRunContext, signal?: AbortSignal, config?: WorkerInvokeConfig): Promise<unknown> {
+   try {
+     const session = exec?.agent?.session
+@@ -203,14 +192,17 @@
+     let value: unknown
+     try { value = JSON.parse(stdout.text) } catch { return failure('RESULT_UNKNOWN', 'Worker returned invalid JSON; inspect postconditions.', 'verify', 'unknown') }
+     if (!record(value)) return failure('RESULT_UNKNOWN', 'Worker returned a non-object result; inspect postconditions.', 'verify', 'unknown')
+-    // Report reads/writes to the host's read-before-edit table, exactly like host read/edit. (#17)
++    // Report only explicit reads to the host read-before-edit table.
+     if (['inspect_local_file', 'stat'].includes(tool) && value?.status === 'completed') emitObserved(ctx, readObservation, exec)
+     if (reads && Array.isArray(value?.items)) {
+       for (const [index, item] of value.items.entries()) {
+         if (record(item) && item.status === 'completed') emitObserved(ctx, readObservations[index], exec)
+       }
+     }
+-    if (mutates) await observeReplaced(ctx, fsService, value, cwd, exec, signal)
++    // Worker mutation receipts do not bind the host provider's opaque version to the
++    // published content. Even matching size or a later stat can endorse a different
++    // writer's unread version. Preserve the prior guard; require an explicit read
++    // before native editing after a mutation. Never infer observation from success.
+     const normalized = normalizeNativeDenial(value, policy, tool, mutates ? requiredMode(policy) : 'workspace-write')
+     return { ...normalized, sandbox: { mode: policy.mode, enforcement: 'policy', boundary: 'trusted-native-file-operations' } }
+   } catch (error) {
+--- a/src/capabilities/file.ts
++++ b/src/capabilities/file.ts
+@@ -134,5 +134,5 @@
+   copy: 'Copy ONE regular file to absent to (relative to session cwd); parents must exist. Required expectedRevision checks source. Atomic no-clobber destination; preserves metadata or fails closed. Windows preserves owner/group/ordered DACL and supported basic attributes/timestamps; readonly overwrite is refused and unsupported streams/EA/special storage fail with METADATA_UNSUPPORTED. SACL/audit labels are not preserved. Darwin requires APFS cloning and currently refuses nonempty extended ACLs with METADATA_UNSUPPORTED before staging; use a dedicated metadata-aware tool for ACL-bearing files. No directories/links; recursive work uses ops_batch when available.' + RESULT,
+   move: 'Move ONE regular file to absent to, same filesystem only. Required source expectedRevision. Atomic no-clobber destination then source unlink; failures after publication carry effectState:applied. No copy-delete fallback, directories or links.' + RESULT,
+   remove: 'Unlink ONE regular file with required expectedRevision from inspect/stat. No recursion/directories/links. Atomic unlink; no trash. Read-only denies all mutations.' + RESULT,
+-  replace: 'Replace LITERAL text (pattern is not a regex) in UTF-8 files under path; glob filters files as in ops_grep. dryRun observes only; writes use revision checks and atomic replacement. Read-only sessions are rejected. Darwin nonempty extended ACLs fail closed with METADATA_UNSUPPORTED. Windows preserves owner/group/ordered DACL and supported basic attributes/timestamps; readonly overwrite is refused and unsupported streams/EA/special storage fail with METADATA_UNSUPPORTED. SACL/audit labels are not preserved.' + RESULT,
++  replace: 'Replace LITERAL text (pattern is not a regex) in UTF-8 files under path; glob filters files as in ops_grep. dryRun observes only; writes use revision checks and atomic replacement. After a write, explicitly read the target again before native editing. Read-only sessions are rejected. Darwin nonempty extended ACLs fail closed with METADATA_UNSUPPORTED. Windows preserves owner/group/ordered DACL and supported basic attributes/timestamps; readonly overwrite is refused and unsupported streams/EA/special storage fail with METADATA_UNSUPPORTED. SACL/audit labels are not preserved.' + RESULT,
+ })
+--- a/test/worker-boundary.test.mjs
++++ b/test/worker-boundary.test.mjs
+@@ -52,7 +52,10 @@
+     state.text = '{"status":"completed","changed":1,"items":[null,0,{"path":"safe.txt","bytesAfter":0}]}'
+     const changed = await fileCall(ctx, 'unused', 'replace', { path: 'safe.txt', pattern: 'a', replacement: 'b' }, exec, signal)
+     assert.equal(changed.changed, 1); assert.equal(changed.status, 'completed')
+-    assert.equal(state.observed, 1, 'only a valid matching receipt refreshes host observation')
++    assert.equal(state.observed, 0, 'mutation receipts never prove a host observation')
++    state.text = '{"status":"completed"}'
++    await fileCall(ctx, 'unused', 'stat', { path: 'safe.txt' }, exec, signal)
++    assert.equal(state.observed, 1, 'a successful explicit stat still bridges its pre-read version')
+     state.text = 'null'
+     const unsettled = await fileCall(ctx, 'unused', 'write_file', { path: 'new.txt', content: 'new', expectedRevision: 'absent' }, exec, signal)
+     assert.equal(unsettled.error.effectState, 'unknown', 'a write may already have happened')
+--- /dev/null
++++ b/test/local-observation.test.mjs
+@@ -0,0 +1,67 @@
++import fs from 'node:fs'; import path from 'node:path'; import {pathToFileURL} from 'node:url';
++import FileSystem from '@deepseek-ai/dsh-fs-local';
++import * as ObservationPolicy from '@deepseek-ai/dsh-fs-observation-policy';
++import Subprocess from '@deepseek-ai/dsh-subprocess-local';
++import {bootHost,shutdown} from './lib/host.mjs';
++import {assert,test,report,withTempDir} from './lib/harness.mjs';
++import {WORKER,requireWorker} from './lib/boundary.mjs';
++const {invoke}=await import(process.env.OPS_WORKER_ENTRY ? pathToFileURL(process.env.OPS_WORKER_ENTRY).href : '../lib/file/worker.js');
++requireWorker('local-observation');
++const publish=(file,text)=>{const tmp=file+'.next';fs.writeFileSync(tmp,text);fs.renameSync(tmp,file)};
++async function fixture(body,{real=false}={}) {
++ await withTempDir('observation',async root=>{
++  const file=path.join(root,'a.txt');fs.writeFileSync(file,'alpha');
++  const {ctx}=await bootHost();const exec={agent:{session:{id:'local-observation',header:{cwd:root}}},signal:new AbortController().signal};
++  let response={status:'completed',changed:1,items:[{path:file,bytesAfter:5}]},action=()=>publish(file,'delta'),exitCode=0,interrupted=false;
++  const events=[];
++  try {
++   await ctx.plugin(FileSystem,{});await ctx.plugin(ObservationPolicy);
++   await ctx.plugin(inner=>inner.provide('sandboxPolicy',{resolve:()=>({mode:'danger-full-access',workspaceRoot:root})}));
++   if(real)await ctx.plugin(Subprocess);else await ctx.plugin(inner=>inner.provide('subprocess',{spawn:()=>{
++    action();return {done:Promise.resolve({exitCode,...(interrupted?{signal:'SIGTERM'}:{})}),collected:{stdout:{readFrom:()=>({text:JSON.stringify(response),lossy:false})},stderr:{readFrom:()=>({text:'',lossy:false})}}};
++   }}));
++   ctx.on('fs/observed',(target,observation)=>events.push({target,observation}));
++   const host=ctx.get('fs'); const target=await host.resolve(file,{cwd:root});
++   const intent=()=>ctx.waterfall('fs/edit-intent',target,exec,()=>undefined);
++   const call=(tool='replace',args={path:file,pattern:'alpha',replacement:'delta'})=>invoke(ctx,WORKER,tool,args,exec,exec.signal);
++   const read=()=>{response={status:'completed',items:[{status:'completed',items:[{text:fs.readFileSync(file,'utf8')}]}]};action=()=>{};return call('read_files',{files:[{path:file}]})};
++   const edit=async(oldString='delta')=>host.editText(target,{oldString,newString:'final'},await intent());
++   await body({file,host,target,events,intent,call,read,edit,set(v){if(v.response)response=v.response;if(v.action)action=v.action;if(v.exitCode!==undefined)exitCode=v.exitCode;if(v.interrupted!==undefined)interrupted=v.interrupted}});
++  }finally{await shutdown(ctx)}
++ });
++}
++for(const [name,action] of [
++ ['normal publication',file=>publish(file,'delta')],
++ ['same-size concurrent writer',file=>{publish(file,'delta');publish(file,'OTHER')}],
++ ['different-size concurrent writer',file=>{publish(file,'delta');publish(file,'OTHER-LONG')}],
++ ['delete and recreate',file=>{publish(file,'delta');fs.unlinkSync(file);publish(file,'OTHER')}],
++ ['delete after publication',file=>{publish(file,'delta');fs.unlinkSync(file)}],
++])await test(`${name}: successful mutation never creates an observation`,()=>fixture(async f=>{
++ f.set({action:()=>action(f.file)});assert.equal((await f.call()).status,'completed');
++ assert.equal(f.events.length,0);await assert.rejects(f.intent(),{code:'FS_NOT_OBSERVED'});
++}));
++for(const status of ['partial','error'])await test(`${status} mutation never observes`,()=>fixture(async f=>{
++ f.set({response:{status,changed:1,items:[{path:f.file,bytesAfter:5}]}});await f.call();assert.equal(f.events.length,0);await assert.rejects(f.intent(),{code:'FS_NOT_OBSERVED'});
++}));
++await test('dry run never observes',()=>fixture(async f=>{
++ f.set({action:()=>{},response:{status:'completed',dryRun:true,changed:1,items:[{path:f.file,bytesAfter:5}]}});await f.call();assert.equal(f.events.length,0);
++}));
++for(const failure of ['nonzero','interrupted'])await test(`${failure} never observes`,()=>fixture(async f=>{
++ f.set(failure==='nonzero'?{exitCode:1}:{interrupted:true});assert.equal((await f.call()).status,'error');assert.equal(f.events.length,0);
++}));
++await test('prior read stays stale after mutation; explicit read restores native edit',()=>fixture(async f=>{
++ await f.read(); const before=await f.intent();assert.equal(f.events.length,1);
++ f.set({action:()=>publish(f.file,'delta'),response:{status:'completed',changed:1,items:[{path:f.file,bytesAfter:5}]}});
++ await f.call();assert.deepEqual(await f.intent(),before);await assert.rejects(f.edit(),{code:'FS_STALE_VERSION'});
++ await f.read();await f.edit();assert.equal(fs.readFileSync(f.file,'utf8'),'final');
++}));
++await test('concurrent change during explicit read records old version and rejects stale edit',()=>fixture(async f=>{
++ f.set({action:()=>publish(f.file,'OTHER'),response:{status:'completed',items:[{status:'completed'}]}});
++ await f.call('read_files',{files:[{path:f.file}]});assert.equal(f.events.length,1);await assert.rejects(f.edit('OTHER'),{code:'FS_STALE_VERSION'});
++}));
++await test('real Linux worker replace then read enables guarded native edit',()=>fixture(async f=>{
++ assert.equal((await f.call()).status,'completed');assert.equal(fs.readFileSync(f.file,'utf8'),'delta');
++ assert.equal(f.events.length,0);await assert.rejects(f.intent(),{code:'FS_NOT_OBSERVED'});
++ assert.equal((await f.call('read_files',{files:[{path:f.file}]})).status,'completed');await f.edit();assert.equal(fs.readFileSync(f.file,'utf8'),'final');
++},{real:true}));
++report('local-observation');
+--- a/docs/CHANGELOG.md
++++ b/docs/CHANGELOG.md
+@@ -1,4 +1,10 @@
+ # Changelog
++
++## [Unreleased local candidate]
++
++- Stop inferring host read observation from mutation receipts; explicitly read before subsequent native editing. See [local correction](local-observation-fix.md).
++- 不再从变更回执推断宿主已读版本；后续原生编辑前须显式读取。参见[本地修复](本地观察桥修复.md)。
++
+ 
+ All notable changes to this package are recorded here.
+ 
+--- /dev/null
++++ b/docs/local-observation-fix.md
+@@ -0,0 +1,7 @@
++# Local observation bridge correction
++
++After any OPS mutation, explicitly read the affected file with `ops_read_files` or the native read tool before native editing. A successful mutation is not a read: the bridge no longer registers the post-operation stat as observed. A previous observed version remains guarded and will become stale after the mutation. Dry runs, partial results, failures and interrupted results also do not refresh observations.
++
++The normal successful explicit read/stat bridge remains unchanged. It snapshots the host version before starting the worker, so a concurrent change cannot be endorsed using a newer post-read stat. It relies on the host provider's version/freshness contract; it is not a new content-hash or atomic read guarantee.
++
++The worker's published content digest cannot be equated with a provider's opaque metadata version. Removing post-mutation refresh is the conservative JS-only correction; no Rust worker or host API changes are required. Native edits still require the observation-policy plugin and provider guard.
+--- /dev/null
++++ b/docs/本地观察桥修复.md
+@@ -0,0 +1,7 @@
++# 本地观察桥修复
++
++OPS 变更文件后，必须先用 `ops_read_files` 或原生读取工具显式读取目标，再进行原生编辑。变更成功不代表已读：桥接不再把变更后的 stat 注册为观察。先前的观察版本仍受保护，文件变更后会过期。dry run、部分结果、失败及中断也不会刷新观察。
++
++普通成功读取/stat 桥接保持原样：启动 worker 前获取宿主版本，不会用读取后的新 stat 背书并发版本。它依赖宿主 provider 的版本与新鲜度契约，不新增内容哈希或原子读取保证。
++
++worker 内容摘要不能直接等同于 provider 的不透明元数据版本。取消变更后刷新是保守的纯 JS 修正，无需修改 Rust worker 或宿主 API。原生编辑保护仍需要观察策略插件及 provider guard。
